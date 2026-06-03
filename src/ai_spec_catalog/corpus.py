@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hashlib
+import json
 from fnmatch import fnmatch
 from pathlib import Path
 from typing import Any
@@ -39,6 +41,7 @@ def load_markdown_item(path: Path, config: CatalogConfig) -> CorpusItem:
         title=title or rel_path,
         front_matter=front_matter,
         text=body.strip(),
+        content_hash=hash_text(raw),
     )
 
 
@@ -67,6 +70,21 @@ def search_corpus(
 
     scored.sort(key=lambda pair: (-pair[0], pair[1].source.path))
     return [item for _, item in scored[:limit]]
+
+
+def hash_text(text: str) -> str:
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def source_fingerprint(items: list[CorpusItem]) -> str:
+    payload = [
+        {
+            "path": item.source.path,
+            "content_hash": item.content_hash,
+        }
+        for item in sorted(items, key=lambda candidate: candidate.source.path)
+    ]
+    return hash_text(json.dumps(payload, sort_keys=True, separators=(",", ":")))
 
 
 def parse_front_matter(raw: str) -> tuple[dict[str, Any], str, int]:

@@ -53,9 +53,13 @@ Catalog does not own:
 
 ## Current Surface
 
+- `catalog init`
+- `catalog index`
+- `catalog status`
 - `catalog context`
 - `catalog search`
 - `catalog validate`
+- `catalog project new`
 
 The Python module path is `ai_spec_catalog`.
 

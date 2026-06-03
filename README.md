@@ -67,6 +67,12 @@ After installing the package, the primary executable is `catalog`.
 From this directory:
 
 ```bash
+catalog init --root ../../..
+catalog index --root ../../..
+catalog status --root ../../..
+```
+
+```bash
 catalog context \
   --root ../../.. \
   --cwd projects/spec \
@@ -91,8 +97,41 @@ catalog search --root ../../.. --query "context packet"
 Validate:
 
 ```bash
-catalog validate --root ../../..
+catalog validate --root ../../.. --format json
 ```
+
+Project creation dry-run:
+
+```bash
+catalog project new \
+  --root ../../.. \
+  --name "Example Project" \
+  --tag personal \
+  --tier BRIEF
+```
+
+## `.catalog/` Derived State
+
+`catalog init` creates a generated `.catalog/` directory at the corpus
+root. `catalog index` refreshes it from source Markdown.
+
+MVP artifacts:
+
+- `.catalog/AI.md` — generated orientation for humans and AI tools;
+- `.catalog/manifest.json` — Catalog version, baseline, freshness,
+  source fingerprint, artifacts, and conformance markers;
+- `.catalog/catalog.sqlite` — durable source, validation, and
+  conformance tables;
+- `.catalog/indexes/sources.jsonl` — portable source inventory;
+- `.catalog/indexes/validation-issues.jsonl` — portable validation
+  issue export;
+- `.catalog/reports/validation.md` — human validation receipt;
+- `.catalog/jobs/last-run.json` — last indexing receipt;
+- `.catalog/embeddings/` — reserved for future vector artifacts.
+
+Source files remain canonical. Catalog excludes `.catalog/` from corpus
+discovery and does not edit `.gitignore`; `catalog init` warns if the
+generated directory does not appear to be ignored.
 
 ## Development
 

@@ -3,9 +3,10 @@ from __future__ import annotations
 from pathlib import Path
 
 from ai_spec_catalog.config import CatalogConfig
-from ai_spec_catalog.corpus import load_corpus, search_corpus
+from ai_spec_catalog.corpus import search_corpus, source_fingerprint
 from ai_spec_catalog.models import CatalogQuery, ContextItem, ContextPacket, CorpusItem
-from ai_spec_catalog.validators import validate_corpus
+from ai_spec_catalog.storage import load_index_or_corpus, read_manifest
+from ai_spec_catalog.validators import corpus_baseline, validate_corpus
 
 
 def build_context_packet(
@@ -15,9 +16,10 @@ def build_context_packet(
 ) -> ContextPacket:
     """Assemble a source-cited context packet for an agent task."""
 
-    items = load_corpus(config)
+    items = load_index_or_corpus(config)
     selected = select_context_items(goal, cwd, items, config)
     issues = validate_corpus(items, config)
+    manifest = read_manifest(config)
 
     return ContextPacket(
         query=CatalogQuery(goal=goal, cwd=str(cwd) if cwd is not None else None),
@@ -28,6 +30,10 @@ def build_context_packet(
             "Use generated context as a bounded starting point, not as memory.",
             "Keep write workflows explicit: propose, validate, diff, approve, apply.",
         ],
+        baseline=manifest.ai_spec_baseline if manifest else corpus_baseline(items),
+        source_fingerprint=(
+            manifest.source_fingerprint if manifest else source_fingerprint(items)
+        ),
     )
 
 
