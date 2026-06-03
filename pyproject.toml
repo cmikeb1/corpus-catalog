@@ -1,0 +1,28 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "cans-catalog"
+version = "0.1.0"
+description = "Local corpus catalog integration and context packet builder for CANS."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+  "pydantic>=2",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest",
+  "ruff",
+]
+
+[project.scripts]
+cans-catalog = "cans_catalog.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/cans_catalog"]
+
+[tool.ruff]
+line-length = 88
