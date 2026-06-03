@@ -1,6 +1,6 @@
 from pydantic import ValidationError
 
-from cans_catalog.models import SourceRef
+from ai_spec_catalog.models import SourceRef
 
 
 def test_source_ref_rejects_inverted_line_range():

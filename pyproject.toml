@@ -3,9 +3,9 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "cans-catalog"
+name = "ai-spec-catalog"
 version = "0.1.0"
-description = "Local corpus catalog integration and context packet builder for CANS."
+description = "AI-SPEC-coupled corpus catalog CLI and context packet builder."
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
@@ -19,10 +19,11 @@ dev = [
 ]
 
 [project.scripts]
-cans-catalog = "cans_catalog.cli:main"
+catalog = "ai_spec_catalog.cli:main"
+ai-spec-catalog = "ai_spec_catalog.cli:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/cans_catalog"]
+packages = ["src/ai_spec_catalog"]
 
 [tool.ruff]
 line-length = 88

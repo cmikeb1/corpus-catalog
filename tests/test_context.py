@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from cans_catalog.config import CatalogConfig
-from cans_catalog.context import build_context_packet
+from ai_spec_catalog.config import CatalogConfig
+from ai_spec_catalog.context import build_context_packet
 
 
 FIXTURE_ROOT = Path(__file__).parent / "fixtures" / "mini_brief"

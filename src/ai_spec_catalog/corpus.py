@@ -4,8 +4,8 @@ from fnmatch import fnmatch
 from pathlib import Path
 from typing import Any
 
-from cans_catalog.config import CatalogConfig
-from cans_catalog.models import CorpusItem, SourceRef
+from ai_spec_catalog.config import CatalogConfig
+from ai_spec_catalog.models import CorpusItem, SourceRef
 
 
 def load_corpus(config: CatalogConfig) -> list[CorpusItem]:
@@ -73,8 +73,8 @@ def parse_front_matter(raw: str) -> tuple[dict[str, Any], str, int]:
     """Parse a small YAML-style front matter subset.
 
     This intentionally avoids making full YAML a core dependency. It
-    supports the simple scalar and list forms currently used by CANS
-    component metadata and AI handbooks.
+    supports the simple scalar and list forms currently used by
+    AI-SPEC handbooks and component-style metadata.
     """
 
     lines = raw.splitlines()

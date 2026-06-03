@@ -4,14 +4,14 @@ import argparse
 import json
 from pathlib import Path
 
-from cans_catalog.config import CatalogConfig
-from cans_catalog.context import build_context_packet
-from cans_catalog.corpus import load_corpus, search_corpus
-from cans_catalog.validators import validate_corpus
+from ai_spec_catalog.config import CatalogConfig
+from ai_spec_catalog.context import build_context_packet
+from ai_spec_catalog.corpus import load_corpus, search_corpus
+from ai_spec_catalog.validators import validate_corpus
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(prog="cans-catalog")
+    parser = argparse.ArgumentParser(prog="catalog")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     context_parser = subparsers.add_parser("context")

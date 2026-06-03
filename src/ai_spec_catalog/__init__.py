@@ -1,9 +1,9 @@
-"""CANS Catalog integration."""
+"""AI-SPEC Catalog CLI and library surface."""
 
-from cans_catalog.config import CatalogConfig
-from cans_catalog.context import build_context_packet
-from cans_catalog.corpus import load_corpus, search_corpus
-from cans_catalog.models import (
+from ai_spec_catalog.config import CatalogConfig
+from ai_spec_catalog.context import build_context_packet
+from ai_spec_catalog.corpus import load_corpus, search_corpus
+from ai_spec_catalog.models import (
     CatalogQuery,
     ContextItem,
     ContextPacket,

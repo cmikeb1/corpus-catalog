@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from cans_catalog.config import CatalogConfig
-from cans_catalog.models import CorpusItem, SourceRef, ValidationIssue
+from ai_spec_catalog.config import CatalogConfig
+from ai_spec_catalog.models import CorpusItem, SourceRef, ValidationIssue
 
 
 def validate_corpus(
