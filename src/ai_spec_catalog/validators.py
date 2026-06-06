@@ -60,7 +60,11 @@ def validate_corpus(
                     )
                 )
 
-        if is_project_handbook(item) and not project_overview_exists(item, by_path):
+        if (
+            is_project_handbook(item)
+            and project_overview_required(item)
+            and not project_overview_exists(item, by_path)
+        ):
             issues.append(
                 ValidationIssue(
                     code="project-missing-overview",
@@ -115,6 +119,12 @@ def validate_corpus(
 def is_project_handbook(item: CorpusItem) -> bool:
     parts = item.source.path.split("/")
     return len(parts) == 3 and parts[0] == "projects" and parts[2] == "AI.md"
+
+
+def project_overview_required(item: CorpusItem) -> bool:
+    profile = item.front_matter.get("ai_spec_profile")
+    adoption = item.front_matter.get("ai_spec_adoption")
+    return not (profile == "project-shell" and adoption == "pre-spec")
 
 
 def project_overview_exists(
