@@ -95,12 +95,13 @@ def build_project_creation_plan(
         files=files,
         sources=sources,
         commands=[
-            f"catalog context --root {config.corpus_root} --cwd {project_path} --goal \"Create project {name}\"",
-            f"catalog validate --root {config.corpus_root} --format json",
-            f"catalog index --root {config.corpus_root}",
+            f"catalog context --cwd {project_path} --goal \"Create project {name}\"",
+            "catalog validate --format json",
+            "catalog index",
         ],
         notes=[
             "This is a dry-run plan; Catalog did not create or modify files.",
+            f"Run suggested commands from the corpus root: {config.corpus_root}.",
             "Use the declared tier-root AI-SPEC baseline for scaffold details.",
             "Keep writes explicit, then validate and refresh .catalog derived state.",
         ],

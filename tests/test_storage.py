@@ -155,4 +155,9 @@ def test_project_creation_plan_is_read_only_and_source_cited(tmp_path):
         "projects/garden-tools/assets/epics/001-BOOTSTRAP/TASKS.md",
         "AI.md",
     }
-    assert all(command.startswith("catalog ") for command in plan.commands)
+    assert plan.commands == [
+        'catalog context --cwd projects/garden-tools --goal "Create project Garden Tools"',
+        "catalog validate --format json",
+        "catalog index",
+    ]
+    assert f"Run suggested commands from the corpus root: {root.resolve()}." in plan.notes

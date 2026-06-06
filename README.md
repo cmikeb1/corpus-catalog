@@ -64,12 +64,27 @@ boring and tested.
 After installing the package, the primary executable is `catalog`.
 `ai-spec-catalog` is provided as a more explicit alias.
 
+All commands accept `--root`, but it is optional. When omitted, Catalog
+uses the current working directory as the corpus root.
+
+Running `catalog` with no subcommand defaults to `catalog status` when
+the current directory looks like a corpus root. Elsewhere, it prints
+the top-level help.
+
 From this directory:
 
 ```bash
 catalog init --root ../../..
 catalog index --root ../../..
 catalog status --root ../../..
+```
+
+From the corpus root:
+
+```bash
+catalog init
+catalog index
+catalog status
 ```
 
 ```bash
@@ -94,21 +109,28 @@ Search:
 catalog search --root ../../.. --query "context packet"
 ```
 
+`search` prints compact source hits for command-line use: source
+metadata, a matched snippet, selected AI-SPEC metadata, and content
+hash. Use `context` when you want bounded source excerpts for agent
+work.
+
 Validate:
 
 ```bash
 catalog validate --root ../../.. --format json
 ```
 
-Project creation dry-run:
+Project creation dry-run, from the corpus root:
 
 ```bash
 catalog project new \
-  --root ../../.. \
   --name "Example Project" \
   --tag personal \
   --tier BRIEF
 ```
+
+Run project-creation follow-up commands from the corpus root; they use
+the current working directory as the default root.
 
 ## `.catalog/` Derived State
 
