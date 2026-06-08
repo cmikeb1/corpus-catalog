@@ -11,18 +11,35 @@ DEFAULT_INCLUDE_PATTERNS = (
     "**/README.md",
     "**/assets/OVERVIEW.md",
     "**/assets/epics/*/TASKS.md",
+    "**/assets/epics/*/SPIKE.md",
+    "**/assets/epics/*/reference/*.md",
+    "**/assets/epics/*/reference/**/*.md",
+    "**/assets/reference/*.md",
+    "**/assets/reference/**/*.md",
     "**/registry/*.md",
     "ai-spec/AI-SPEC.md",
+    "ai-spec/specs/**/*.md",
     "ai-spec/profiles/**/*.md",
+    "projects/spec/code/ai-spec/AI-SPEC.md",
+    "projects/spec/code/ai-spec/specs/**/*.md",
+    "projects/spec/code/ai-spec/profiles/**/*.md",
 )
 
 DEFAULT_EXCLUDE_PARTS = (
     ".git",
     ".catalog",
+    ".corpus",
     ".venv",
     "__pycache__",
     "_archive",
     "node_modules",
+)
+
+CORPUS_IGNORE_FILENAME = ".corpusignore"
+
+RECOMMENDED_CORPUSIGNORE_PATTERNS = (
+    "projects/spec/code/catalog/",
+    "projects/spec/code/corpus-catalog/",
 )
 
 
@@ -59,3 +76,7 @@ class CatalogConfig(BaseModel):
 
     def relative_path(self, path: Path) -> str:
         return path.resolve().relative_to(self.corpus_root).as_posix()
+
+    @property
+    def corpus_ignore_path(self) -> Path:
+        return self.corpus_root / CORPUS_IGNORE_FILENAME

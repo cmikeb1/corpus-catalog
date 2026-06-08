@@ -6,7 +6,17 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 Severity = Literal["info", "warning", "error"]
-SourceKind = Literal["handbook", "overview", "tasks", "registry", "readme", "spec", "note"]
+SourceKind = Literal[
+    "handbook",
+    "overview",
+    "tasks",
+    "spike",
+    "reference",
+    "registry",
+    "readme",
+    "spec",
+    "note",
+]
 CatalogState = Literal["missing", "stale", "fresh"]
 
 

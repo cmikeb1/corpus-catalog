@@ -66,6 +66,10 @@ def select_context_items(
         if task_path:
             add(task_path)
 
+        spike_path = nearest_spike_path(cwd_path)
+        if spike_path:
+            add(spike_path)
+
     if any(
         term in goal.casefold()
         for term in ("integration", "adapter", "deployment", "persona", "registry")
@@ -137,3 +141,16 @@ def nearest_task_path(cwd_path: Path) -> str | None:
         return None
 
     return Path(*parts[: epics_index + 2], "TASKS.md").as_posix()
+
+
+def nearest_spike_path(cwd_path: Path) -> str | None:
+    parts = list(cwd_path.parts)
+    try:
+        epics_index = parts.index("epics")
+    except ValueError:
+        return None
+
+    if len(parts) <= epics_index + 1:
+        return None
+
+    return Path(*parts[: epics_index + 2], "SPIKE.md").as_posix()

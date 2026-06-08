@@ -50,6 +50,8 @@ The initial deterministic surface is:
 - discover relevant Markdown sources under a corpus root;
 - parse simple YAML-style front matter from `AI.md`, READMEs,
   registries, overviews, and task files;
+- honor root `.corpusignore` rules before include pattern checks;
+- index active epic `SPIKE.md` files and reference Markdown by default;
 - search corpus items lexically;
 - assemble a source-cited context packet for a goal and cwd;
 - run cheap validation checks, starting with root handbook presence and
@@ -154,6 +156,23 @@ MVP artifacts:
 Source files remain canonical. Catalog excludes `.catalog/` from corpus
 discovery and does not edit `.gitignore`; `catalog init` warns if the
 generated directory does not appear to be ignored.
+
+## `.corpusignore`
+
+Catalog reads a root `.corpusignore` before applying source include
+patterns. The first implementation intentionally supports a small
+`fnmatch` subset:
+
+- blank lines and `#` comments are ignored;
+- root-relative patterns match the POSIX-style corpus path;
+- trailing-slash patterns match a directory and everything below it;
+- bare filename patterns match any path segment with that name.
+
+Use `.corpusignore` for package-local code docs, fixture corpora,
+generated docs, build output, and other Markdown that belongs to the
+software project rather than the human corpus. Validation warns when a
+known package-local code checkout exists without a recommended
+`.corpusignore` rule.
 
 ## Development
 

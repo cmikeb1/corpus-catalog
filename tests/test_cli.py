@@ -28,7 +28,7 @@ def test_index_defaults_root_to_current_working_directory(
     manifest = json.loads(output)
     assert manifest["corpus_root"] == str(root.resolve())
     assert manifest["catalog_dir"] == str(root.resolve() / ".catalog")
-    assert manifest["source_count"] == 4
+    assert manifest["source_count"] == 6
 
 
 def test_no_args_defaults_to_status_in_corpus_root(tmp_path, monkeypatch, capsys):
@@ -81,3 +81,25 @@ def test_search_cli_emits_compact_results(tmp_path, monkeypatch, capsys):
     assert results[0]["snippet"]
     assert len(results[0]["snippet"]) < 400
     assert "## Active Epics" not in json.dumps(results)
+
+
+def test_search_cli_sees_epic_local_reference(tmp_path, monkeypatch, capsys):
+    root = copy_fixture(tmp_path)
+    monkeypatch.chdir(root)
+    monkeypatch.setattr(sys, "argv", ["catalog", "index"])
+    main()
+    capsys.readouterr()
+
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["catalog", "search", "--query", "demo candidate detail", "--limit", "1"],
+    )
+    main()
+
+    results = json.loads(capsys.readouterr().out)
+    assert len(results) == 1
+    assert (
+        results[0]["source"]["path"]
+        == "projects/demo/assets/epics/001-DEMO/reference/demo-candidate.md"
+    )

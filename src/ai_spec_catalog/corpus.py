@@ -180,6 +180,12 @@ def source_kind(rel_path: str):
         return "overview"
     if rel_path.endswith("/TASKS.md") and "/assets/epics/" in rel_path:
         return "tasks"
+    if rel_path.endswith("/SPIKE.md") and "/assets/epics/" in rel_path:
+        return "spike"
+    if "/assets/reference/" in rel_path:
+        return "reference"
+    if "/assets/epics/" in rel_path and "/reference/" in rel_path:
+        return "reference"
     if "/registry/" in rel_path:
         return "registry"
     if rel_path.endswith("/README.md"):
@@ -190,6 +196,7 @@ def source_kind(rel_path: str):
 
 
 def _iter_markdown_paths(config: CatalogConfig):
+    ignore_patterns = load_corpus_ignore_patterns(config)
     for path in config.corpus_root.rglob("*.md"):
         if not path.is_file():
             continue
@@ -197,5 +204,46 @@ def _iter_markdown_paths(config: CatalogConfig):
             continue
 
         rel_path = config.relative_path(path)
+        if path_is_ignored(rel_path, ignore_patterns):
+            continue
         if any(fnmatch(rel_path, pattern) for pattern in config.include_patterns):
             yield path
+
+
+def load_corpus_ignore_patterns(config: CatalogConfig) -> tuple[str, ...]:
+    path = config.corpus_ignore_path
+    if not path.exists():
+        return ()
+    return parse_corpusignore(path.read_text(encoding="utf-8"))
+
+
+def parse_corpusignore(raw: str) -> tuple[str, ...]:
+    patterns: list[str] = []
+    for line in raw.splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        patterns.append(stripped.replace("\\", "/").lstrip("/"))
+    return tuple(patterns)
+
+
+def path_is_ignored(rel_path: str, patterns: tuple[str, ...]) -> bool:
+    return any(ignore_pattern_matches(rel_path, pattern) for pattern in patterns)
+
+
+def ignore_pattern_matches(rel_path: str, pattern: str) -> bool:
+    normalized = pattern.strip().replace("\\", "/").lstrip("/")
+    if not normalized:
+        return False
+
+    if normalized.endswith("/"):
+        prefix = normalized.rstrip("/")
+        return rel_path == prefix or rel_path.startswith(f"{prefix}/")
+
+    if fnmatch(rel_path, normalized):
+        return True
+
+    if "/" not in normalized:
+        return any(fnmatch(part, normalized) for part in rel_path.split("/"))
+
+    return False

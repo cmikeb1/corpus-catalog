@@ -21,6 +21,7 @@ def test_context_packet_includes_cascading_sources():
     assert "projects/demo/AI.md" in paths
     assert "projects/demo/assets/OVERVIEW.md" in paths
     assert "projects/demo/assets/epics/001-DEMO/TASKS.md" in paths
+    assert "projects/demo/assets/epics/001-DEMO/SPIKE.md" in paths
     assert not packet.validation_issues
 
 

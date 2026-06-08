@@ -49,7 +49,7 @@ def test_index_persists_inventory_validation_and_conformance(tmp_path):
 
     manifest = index_catalog(config)
 
-    assert manifest.source_count == 4
+    assert manifest.source_count == 6
     assert manifest.validation_issue_count == 0
     assert manifest.ai_spec_baseline == "v0.18"
     assert {marker.path for marker in manifest.conformance} == {
@@ -77,10 +77,47 @@ def test_index_persists_inventory_validation_and_conformance(tmp_path):
             "select count(*) from conformance_markers"
         ).fetchone()[0]
 
-    assert source_count == 4
+    assert source_count == 6
     assert issue_count == 0
     assert marker_count == 2
     assert catalog_status(config).state == "fresh"
+
+
+def test_default_source_scope_includes_spike_and_epic_reference(tmp_path):
+    root = copy_fixture(tmp_path)
+    config = CatalogConfig(corpus_root=root)
+
+    paths = {item.source.path for item in load_corpus(config)}
+
+    assert "projects/demo/assets/epics/001-DEMO/SPIKE.md" in paths
+    assert "projects/demo/assets/epics/001-DEMO/reference/demo-candidate.md" in paths
+
+
+def test_corpusignore_excludes_package_local_code_markdown(tmp_path):
+    root = copy_fixture(tmp_path)
+    code_readme = root / "projects" / "spec" / "code" / "catalog" / "README.md"
+    code_readme.parent.mkdir(parents=True)
+    code_readme.write_text("# Package README\n", encoding="utf-8")
+    (root / ".corpusignore").write_text(
+        "projects/spec/code/catalog/\n",
+        encoding="utf-8",
+    )
+    config = CatalogConfig(corpus_root=root)
+
+    paths = {item.source.path for item in load_corpus(config)}
+
+    assert "projects/spec/code/catalog/README.md" not in paths
+
+
+def test_corpusignore_excludes_single_file_pattern(tmp_path):
+    root = copy_fixture(tmp_path)
+    ignored_path = "projects/demo/assets/epics/001-DEMO/reference/demo-candidate.md"
+    (root / ".corpusignore").write_text(f"{ignored_path}\n", encoding="utf-8")
+    config = CatalogConfig(corpus_root=root)
+
+    paths = {item.source.path for item in load_corpus(config)}
+
+    assert ignored_path not in paths
 
 
 def test_catalog_outputs_are_excluded_from_source_discovery(tmp_path):

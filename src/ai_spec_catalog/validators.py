@@ -1,6 +1,11 @@
 from __future__ import annotations
 
-from ai_spec_catalog.config import CatalogConfig
+from ai_spec_catalog.config import (
+    CORPUS_IGNORE_FILENAME,
+    RECOMMENDED_CORPUSIGNORE_PATTERNS,
+    CatalogConfig,
+)
+from ai_spec_catalog.corpus import ignore_pattern_matches, load_corpus_ignore_patterns
 from ai_spec_catalog.models import CorpusItem, SourceRef, ValidationIssue
 
 
@@ -38,6 +43,8 @@ def validate_corpus(
                 baseline=baseline,
             )
         )
+
+    issues.extend(validate_corpusignore(config, baseline))
 
     for item in items:
         if item.source.kind == "handbook":
@@ -114,6 +121,67 @@ def validate_corpus(
                 )
 
     return issues
+
+
+def validate_corpusignore(
+    config: CatalogConfig, baseline: str | None
+) -> list[ValidationIssue]:
+    existing_recommended = [
+        pattern
+        for pattern in RECOMMENDED_CORPUSIGNORE_PATTERNS
+        if (config.corpus_root / pattern.rstrip("/")).exists()
+    ]
+    if not existing_recommended:
+        return []
+
+    source = SourceRef(path=CORPUS_IGNORE_FILENAME, kind="note")
+    if not config.corpus_ignore_path.exists():
+        return [
+            ValidationIssue(
+                code="corpusignore-missing",
+                severity="warning",
+                message=(
+                    "Corpus has package-local code paths that should be "
+                    f"excluded; add {CORPUS_IGNORE_FILENAME} with recommended "
+                    "rules."
+                ),
+                source=source,
+                baseline=baseline,
+            )
+        ]
+
+    patterns = load_corpus_ignore_patterns(config)
+    missing = [
+        pattern
+        for pattern in existing_recommended
+        if not corpusignore_covers_recommended_pattern(pattern, patterns)
+    ]
+    if not missing:
+        return []
+
+    return [
+        ValidationIssue(
+            code="corpusignore-missing-recommended-rule",
+            severity="warning",
+            message=(
+                f"{CORPUS_IGNORE_FILENAME} is missing recommended package-local "
+                "code exclusions: " + ", ".join(missing)
+            ),
+            source=source,
+            baseline=baseline,
+        )
+    ]
+
+
+def corpusignore_covers_recommended_pattern(
+    recommended_pattern: str, ignore_patterns: tuple[str, ...]
+) -> bool:
+    sample = f"{recommended_pattern.rstrip('/')}/README.md"
+    return any(
+        ignore_pattern_matches(sample, pattern)
+        or ignore_pattern_matches(recommended_pattern.rstrip("/"), pattern)
+        for pattern in ignore_patterns
+    )
 
 
 def is_project_handbook(item: CorpusItem) -> bool:
