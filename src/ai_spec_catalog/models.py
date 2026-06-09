@@ -125,7 +125,7 @@ class CatalogArtifact(BaseModel):
 
 
 class CatalogManifest(BaseModel):
-    """Manifest for the generated .catalog workbench."""
+    """Manifest for the generated .corpus workbench."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -143,7 +143,7 @@ class CatalogManifest(BaseModel):
 
 
 class CatalogStatus(BaseModel):
-    """Freshness and availability report for .catalog derived state."""
+    """Freshness and availability report for .corpus derived state."""
 
     model_config = ConfigDict(extra="forbid")
 

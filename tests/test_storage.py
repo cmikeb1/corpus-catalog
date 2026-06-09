@@ -30,12 +30,12 @@ def test_init_creates_catalog_workbench_without_source_edits(tmp_path):
     manifest = init_catalog(config)
 
     assert manifest.source_count == 0
-    assert (root / ".catalog" / "AI.md").exists()
-    assert (root / ".catalog" / "manifest.json").exists()
-    assert (root / ".catalog" / "indexes").is_dir()
-    assert (root / ".catalog" / "reports").is_dir()
-    assert (root / ".catalog" / "jobs").is_dir()
-    assert (root / ".catalog" / "embeddings").is_dir()
+    assert (root / ".corpus" / "AI.md").exists()
+    assert (root / ".corpus" / "manifest.json").exists()
+    assert (root / ".corpus" / "indexes").is_dir()
+    assert (root / ".corpus" / "reports").is_dir()
+    assert (root / ".corpus" / "jobs").is_dir()
+    assert (root / ".corpus" / "embeddings").is_dir()
     assert not (root / ".gitignore").exists()
 
     status = catalog_status(config)
@@ -63,12 +63,12 @@ def test_index_persists_inventory_validation_and_conformance(tmp_path):
         "projects/demo/AI.md": "v0.16",
     }
 
-    assert (root / ".catalog" / "indexes" / "sources.jsonl").exists()
-    assert (root / ".catalog" / "indexes" / "validation-issues.jsonl").exists()
-    assert (root / ".catalog" / "reports" / "validation.md").exists()
-    assert (root / ".catalog" / "jobs" / "last-run.json").exists()
+    assert (root / ".corpus" / "indexes" / "sources.jsonl").exists()
+    assert (root / ".corpus" / "indexes" / "validation-issues.jsonl").exists()
+    assert (root / ".corpus" / "reports" / "validation.md").exists()
+    assert (root / ".corpus" / "jobs" / "last-run.json").exists()
 
-    with sqlite3.connect(root / ".catalog" / "catalog.sqlite") as connection:
+    with sqlite3.connect(root / ".corpus" / "catalog.sqlite") as connection:
         source_count = connection.execute("select count(*) from sources").fetchone()[0]
         issue_count = connection.execute(
             "select count(*) from validation_issues"
@@ -120,15 +120,46 @@ def test_corpusignore_excludes_single_file_pattern(tmp_path):
     assert ignored_path not in paths
 
 
-def test_catalog_outputs_are_excluded_from_source_discovery(tmp_path):
+def test_corpus_outputs_are_excluded_from_source_discovery(tmp_path):
     root = copy_fixture(tmp_path)
     config = CatalogConfig(corpus_root=root)
 
     index_catalog(config)
 
     paths = {item.source.path for item in load_corpus(config)}
+    assert ".corpus/AI.md" not in paths
+    assert all(not path.startswith(".corpus/") for path in paths)
+
+
+def test_legacy_catalog_outputs_are_excluded_from_source_discovery(tmp_path):
+    root = copy_fixture(tmp_path)
+    legacy_ai = root / ".catalog" / "AI.md"
+    legacy_ai.parent.mkdir()
+    legacy_ai.write_text("# Legacy generated state\n", encoding="utf-8")
+    config = CatalogConfig(corpus_root=root)
+
+    paths = {item.source.path for item in load_corpus(config)}
+
     assert ".catalog/AI.md" not in paths
     assert all(not path.startswith(".catalog/") for path in paths)
+
+
+def test_status_reports_legacy_catalog_state_without_reading_it(tmp_path):
+    root = copy_fixture(tmp_path)
+    legacy_manifest = root / ".catalog" / "manifest.json"
+    legacy_manifest.parent.mkdir()
+    legacy_manifest.write_text("{}\n", encoding="utf-8")
+    config = CatalogConfig(corpus_root=root)
+
+    status = catalog_status(config)
+
+    assert status.state == "missing"
+    assert status.catalog_dir == str(root.resolve() / ".corpus")
+    assert status.stale_reasons == [
+        ".corpus has not been initialized.",
+        "Legacy .catalog generated state exists but is no longer read; "
+        "run catalog index and delete .catalog after validation.",
+    ]
 
 
 def test_status_uses_content_hash_for_staleness(tmp_path):

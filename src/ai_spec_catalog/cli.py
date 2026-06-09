@@ -121,7 +121,7 @@ def add_root_argument(parser: argparse.ArgumentParser) -> None:
 
 
 def looks_like_corpus_root(path: Path) -> bool:
-    if (path / ".catalog").is_dir():
+    if (path / ".corpus").is_dir():
         return True
     if not (path / "AI.md").is_file():
         return False
@@ -182,7 +182,7 @@ def format_status(status: CatalogStatus) -> str:
     lines = [
         f"Catalog state: {status.state}",
         f"Corpus root: {status.corpus_root}",
-        f"Catalog dir: {status.catalog_dir}",
+        f"Generated state dir: {status.catalog_dir}",
     ]
     if status.manifest and status.manifest.generated_at:
         lines.append(f"Generated: {status.manifest.generated_at}")

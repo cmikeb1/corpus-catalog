@@ -103,7 +103,7 @@ def build_project_creation_plan(
             "This is a dry-run plan; Catalog did not create or modify files.",
             f"Run suggested commands from the corpus root: {config.corpus_root}.",
             "Use the declared tier-root AI-SPEC baseline for scaffold details.",
-            "Keep writes explicit, then validate and refresh .catalog derived state.",
+            "Keep writes explicit, then validate and refresh .corpus derived state.",
         ],
         warnings=warnings,
     )

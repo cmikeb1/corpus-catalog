@@ -20,7 +20,6 @@ dev = [
 
 [project.scripts]
 catalog = "ai_spec_catalog.cli:main"
-ai-spec-catalog = "ai_spec_catalog.cli:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/ai_spec_catalog"]

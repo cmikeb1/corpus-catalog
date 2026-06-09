@@ -63,8 +63,7 @@ boring and tested.
 
 ## CLI
 
-After installing the package, the primary executable is `catalog`.
-`ai-spec-catalog` is provided as a more explicit alias.
+After installing the package, the executable is `catalog`.
 
 All commands accept `--root`, but it is optional. When omitted, Catalog
 uses the current working directory as the corpus root.
@@ -134,28 +133,30 @@ catalog project new \
 Run project-creation follow-up commands from the corpus root; they use
 the current working directory as the default root.
 
-## `.catalog/` Derived State
+## `.corpus/` Derived State
 
-`catalog init` creates a generated `.catalog/` directory at the corpus
+`catalog init` creates a generated `.corpus/` directory at the corpus
 root. `catalog index` refreshes it from source Markdown.
 
 MVP artifacts:
 
-- `.catalog/AI.md` — generated orientation for humans and AI tools;
-- `.catalog/manifest.json` — Catalog version, baseline, freshness,
+- `.corpus/AI.md` — generated orientation for humans and AI tools;
+- `.corpus/manifest.json` — Catalog version, baseline, freshness,
   source fingerprint, artifacts, and conformance markers;
-- `.catalog/catalog.sqlite` — durable source, validation, and
+- `.corpus/catalog.sqlite` — durable source, validation, and
   conformance tables;
-- `.catalog/indexes/sources.jsonl` — portable source inventory;
-- `.catalog/indexes/validation-issues.jsonl` — portable validation
+- `.corpus/indexes/sources.jsonl` — portable source inventory;
+- `.corpus/indexes/validation-issues.jsonl` — portable validation
   issue export;
-- `.catalog/reports/validation.md` — human validation receipt;
-- `.catalog/jobs/last-run.json` — last indexing receipt;
-- `.catalog/embeddings/` — reserved for future vector artifacts.
+- `.corpus/reports/validation.md` — human validation receipt;
+- `.corpus/jobs/last-run.json` — last indexing receipt;
+- `.corpus/embeddings/` — reserved for future vector artifacts.
 
-Source files remain canonical. Catalog excludes `.catalog/` from corpus
+Source files remain canonical. Catalog excludes `.corpus/` from corpus
 discovery and does not edit `.gitignore`; `catalog init` warns if the
-generated directory does not appear to be ignored.
+generated directory does not appear to be ignored. Legacy `.catalog/`
+state is not read after the cutover; rebuild `.corpus/` and delete the
+old directory after validation.
 
 ## `.corpusignore`
 

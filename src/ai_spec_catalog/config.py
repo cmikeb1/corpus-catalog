@@ -71,7 +71,7 @@ class CatalogConfig(BaseModel):
     @model_validator(mode="after")
     def default_catalog_dir(self) -> CatalogConfig:
         if self.catalog_dir is None:
-            self.catalog_dir = self.corpus_root / ".catalog"
+            self.catalog_dir = self.corpus_root / ".corpus"
         return self
 
     def relative_path(self, path: Path) -> str:

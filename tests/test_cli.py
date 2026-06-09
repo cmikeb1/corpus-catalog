@@ -27,7 +27,7 @@ def test_index_defaults_root_to_current_working_directory(
     output = capsys.readouterr().out
     manifest = json.loads(output)
     assert manifest["corpus_root"] == str(root.resolve())
-    assert manifest["catalog_dir"] == str(root.resolve() / ".catalog")
+    assert manifest["catalog_dir"] == str(root.resolve() / ".corpus")
     assert manifest["source_count"] == 6
 
 
@@ -41,9 +41,22 @@ def test_no_args_defaults_to_status_in_corpus_root(tmp_path, monkeypatch, capsys
     output = capsys.readouterr().out
     assert "Catalog state: missing" in output
     assert f"Corpus root: {root.resolve()}" in output
+    assert f"Generated state dir: {root.resolve() / '.corpus'}" in output
 
 
 def test_no_args_prints_help_outside_corpus_root(tmp_path, monkeypatch, capsys):
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(sys, "argv", ["catalog"])
+
+    main()
+
+    output = capsys.readouterr().out
+    assert "usage: catalog" in output
+    assert "Catalog state:" not in output
+
+
+def test_no_args_ignores_legacy_catalog_directory(tmp_path, monkeypatch, capsys):
+    (tmp_path / ".catalog").mkdir()
     monkeypatch.chdir(tmp_path)
     monkeypatch.setattr(sys, "argv", ["catalog"])
 
