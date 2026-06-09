@@ -77,6 +77,8 @@ def build_project_creation_plan(
         by_path,
         [
             "AI.md",
+            "corpus-spec/AI-SPEC.md",
+            "projects/spec/code/corpus-spec/AI-SPEC.md",
             "ai-spec/AI-SPEC.md",
             "projects/spec/code/ai-spec/AI-SPEC.md",
             "projects/spec/AI.md",

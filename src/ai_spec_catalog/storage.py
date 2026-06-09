@@ -752,9 +752,9 @@ def spec_module_id(item: CorpusItem, module_type: str) -> str:
 
 
 def spec_source_checkout(path: str) -> str | None:
-    if path.startswith(("projects/spec/code/ai-spec/", "projects/spec/code/corpus-spec/")):
+    if path.startswith(("projects/spec/code/corpus-spec/", "projects/spec/code/ai-spec/")):
         return "source-checkout"
-    if path.startswith(("ai-spec/", "corpus-spec/")):
+    if path.startswith(("corpus-spec/", "ai-spec/")):
         return "tier-root"
     return None
 

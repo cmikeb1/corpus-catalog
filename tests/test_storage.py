@@ -68,49 +68,49 @@ def test_index_persists_inventory_validation_and_conformance(tmp_path):
         "cmikeb/work/brief@bilby",
     ]
     assert {module.path: module.module_type for module in manifest.spec_modules} == {
-        "ai-spec/AI-SPEC.md": "root-spec",
-        "ai-spec/profiles/human-workspace.md": "profile",
-        "ai-spec/profiles/initiatives.md": "profile",
-        "ai-spec/profiles/project.md": "profile",
-        "ai-spec/profiles/reference.md": "profile",
-        "ai-spec/specs/corpus-identity.md": "spec",
-        "ai-spec/specs/profile-composition.md": "spec",
-        "ai-spec/specs/tooling-and-validation.md": "spec",
+        "corpus-spec/AI-SPEC.md": "root-spec",
+        "corpus-spec/profiles/human-workspace.md": "profile",
+        "corpus-spec/profiles/initiatives.md": "profile",
+        "corpus-spec/profiles/project.md": "profile",
+        "corpus-spec/profiles/reference.md": "profile",
+        "corpus-spec/specs/corpus-identity.md": "spec",
+        "corpus-spec/specs/profile-composition.md": "spec",
+        "corpus-spec/specs/tooling-and-validation.md": "spec",
     }
     assert {module.path: module.module_id for module in manifest.spec_modules} == {
-        "ai-spec/AI-SPEC.md": "root",
-        "ai-spec/profiles/human-workspace.md": "human-workspace",
-        "ai-spec/profiles/initiatives.md": "initiatives",
-        "ai-spec/profiles/project.md": "project",
-        "ai-spec/profiles/reference.md": "reference",
-        "ai-spec/specs/corpus-identity.md": "corpus-identity",
-        "ai-spec/specs/profile-composition.md": "profile-composition",
-        "ai-spec/specs/tooling-and-validation.md": "tooling-and-validation",
+        "corpus-spec/AI-SPEC.md": "root",
+        "corpus-spec/profiles/human-workspace.md": "human-workspace",
+        "corpus-spec/profiles/initiatives.md": "initiatives",
+        "corpus-spec/profiles/project.md": "project",
+        "corpus-spec/profiles/reference.md": "reference",
+        "corpus-spec/specs/corpus-identity.md": "corpus-identity",
+        "corpus-spec/specs/profile-composition.md": "profile-composition",
+        "corpus-spec/specs/tooling-and-validation.md": "tooling-and-validation",
     }
     assert {marker.path for marker in manifest.conformance} == {
         "AI.md",
-        "ai-spec/AI-SPEC.md",
-        "ai-spec/profiles/human-workspace.md",
-        "ai-spec/profiles/initiatives.md",
-        "ai-spec/profiles/project.md",
-        "ai-spec/profiles/reference.md",
-        "ai-spec/specs/corpus-identity.md",
-        "ai-spec/specs/profile-composition.md",
-        "ai-spec/specs/tooling-and-validation.md",
+        "corpus-spec/AI-SPEC.md",
+        "corpus-spec/profiles/human-workspace.md",
+        "corpus-spec/profiles/initiatives.md",
+        "corpus-spec/profiles/project.md",
+        "corpus-spec/profiles/reference.md",
+        "corpus-spec/specs/corpus-identity.md",
+        "corpus-spec/specs/profile-composition.md",
+        "corpus-spec/specs/tooling-and-validation.md",
         "projects/demo/AI.md",
     }
     assert {
         marker.path: marker.ai_spec_version for marker in manifest.conformance
     } == {
         "AI.md": "v0.18",
-        "ai-spec/AI-SPEC.md": "v0.18",
-        "ai-spec/profiles/human-workspace.md": "v0.18",
-        "ai-spec/profiles/initiatives.md": "v0.18",
-        "ai-spec/profiles/project.md": "v0.18",
-        "ai-spec/profiles/reference.md": "v0.18",
-        "ai-spec/specs/corpus-identity.md": "v0.18",
-        "ai-spec/specs/profile-composition.md": "v0.18",
-        "ai-spec/specs/tooling-and-validation.md": "v0.18",
+        "corpus-spec/AI-SPEC.md": "v0.18",
+        "corpus-spec/profiles/human-workspace.md": "v0.18",
+        "corpus-spec/profiles/initiatives.md": "v0.18",
+        "corpus-spec/profiles/project.md": "v0.18",
+        "corpus-spec/profiles/reference.md": "v0.18",
+        "corpus-spec/specs/corpus-identity.md": "v0.18",
+        "corpus-spec/specs/profile-composition.md": "v0.18",
+        "corpus-spec/specs/tooling-and-validation.md": "v0.18",
         "projects/demo/AI.md": "v0.16",
     }
 
@@ -160,39 +160,39 @@ def test_index_persists_inventory_validation_and_conformance(tmp_path):
     assert issue_count == 0
     assert marker_count == 10
     assert spec_module_rows == [
-        ("ai-spec/AI-SPEC.md", "root-spec", "root", None, "tier-root"),
+        ("corpus-spec/AI-SPEC.md", "root-spec", "root", None, "tier-root"),
         (
-            "ai-spec/profiles/human-workspace.md",
+            "corpus-spec/profiles/human-workspace.md",
             "profile",
             "human-workspace",
             "stable",
             "tier-root",
         ),
         (
-            "ai-spec/profiles/initiatives.md",
+            "corpus-spec/profiles/initiatives.md",
             "profile",
             "initiatives",
             "beta",
             "tier-root",
         ),
-        ("ai-spec/profiles/project.md", "profile", "project", "stable", "tier-root"),
-        ("ai-spec/profiles/reference.md", "profile", "reference", "stable", "tier-root"),
+        ("corpus-spec/profiles/project.md", "profile", "project", "stable", "tier-root"),
+        ("corpus-spec/profiles/reference.md", "profile", "reference", "stable", "tier-root"),
         (
-            "ai-spec/specs/corpus-identity.md",
+            "corpus-spec/specs/corpus-identity.md",
             "spec",
             "corpus-identity",
             "stable",
             "tier-root",
         ),
         (
-            "ai-spec/specs/profile-composition.md",
+            "corpus-spec/specs/profile-composition.md",
             "spec",
             "profile-composition",
             "stable",
             "tier-root",
         ),
         (
-            "ai-spec/specs/tooling-and-validation.md",
+            "corpus-spec/specs/tooling-and-validation.md",
             "spec",
             "tooling-and-validation",
             "stable",
@@ -243,9 +243,9 @@ def test_spec_and_profile_modules_are_first_class_sources(tmp_path):
 
     items = {item.source.path: item for item in load_corpus(config)}
 
-    assert items["ai-spec/AI-SPEC.md"].source.kind == "spec-root"
-    assert items["ai-spec/specs/profile-composition.md"].source.kind == "spec-module"
-    assert items["ai-spec/profiles/project.md"].source.kind == "profile-module"
+    assert items["corpus-spec/AI-SPEC.md"].source.kind == "spec-root"
+    assert items["corpus-spec/specs/profile-composition.md"].source.kind == "spec-module"
+    assert items["corpus-spec/profiles/project.md"].source.kind == "profile-module"
 
 
 def test_corpusignore_excludes_package_local_code_markdown(tmp_path):

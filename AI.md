@@ -18,7 +18,7 @@ AI-SPEC-shaped Markdown trees into queryable, source-cited corpora.
 ## Boundary
 
 Catalog is tightly coupled to AI-SPEC but remains a separate codebase so
-the lightweight `ai-spec/` source tree can still be pulled into projects
+the lightweight `corpus-spec/` source tree can still be pulled into projects
 without Python tooling.
 
 Catalog owns:

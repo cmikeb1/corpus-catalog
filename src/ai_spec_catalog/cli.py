@@ -187,7 +187,10 @@ def looks_like_corpus_root(path: Path) -> bool:
         return True
     if not (path / "AI.md").is_file():
         return False
-    return any((path / name).exists() for name in ("projects", "reference", "ai-spec"))
+    return any(
+        (path / name).exists()
+        for name in ("projects", "reference", "corpus-spec", "ai-spec")
+    )
 
 
 def format_search_results(query: str, items) -> list[dict[str, object]]:

@@ -203,10 +203,10 @@ def source_kind(rel_path: str):
         return "readme"
     if rel_path.startswith(
         (
-            "ai-spec/",
             "corpus-spec/",
-            "projects/spec/code/ai-spec/",
+            "ai-spec/",
             "projects/spec/code/corpus-spec/",
+            "projects/spec/code/ai-spec/",
         )
     ):
         return "spec"
@@ -215,24 +215,24 @@ def source_kind(rel_path: str):
 
 def is_spec_root_path(rel_path: str) -> bool:
     return rel_path in {
-        "ai-spec/AI-SPEC.md",
-        "ai-spec/corpus-spec.md",
         "corpus-spec/AI-SPEC.md",
         "corpus-spec/corpus-spec.md",
-        "projects/spec/code/ai-spec/AI-SPEC.md",
-        "projects/spec/code/ai-spec/corpus-spec.md",
+        "ai-spec/AI-SPEC.md",
+        "ai-spec/corpus-spec.md",
         "projects/spec/code/corpus-spec/AI-SPEC.md",
         "projects/spec/code/corpus-spec/corpus-spec.md",
+        "projects/spec/code/ai-spec/AI-SPEC.md",
+        "projects/spec/code/ai-spec/corpus-spec.md",
     }
 
 
 def is_spec_module_path(rel_path: str) -> bool:
     return rel_path.startswith(
         (
-            "ai-spec/specs/",
             "corpus-spec/specs/",
-            "projects/spec/code/ai-spec/specs/",
+            "ai-spec/specs/",
             "projects/spec/code/corpus-spec/specs/",
+            "projects/spec/code/ai-spec/specs/",
         )
     )
 
@@ -240,10 +240,10 @@ def is_spec_module_path(rel_path: str) -> bool:
 def is_profile_module_path(rel_path: str) -> bool:
     return rel_path.startswith(
         (
-            "ai-spec/profiles/",
             "corpus-spec/profiles/",
-            "projects/spec/code/ai-spec/profiles/",
+            "ai-spec/profiles/",
             "projects/spec/code/corpus-spec/profiles/",
+            "projects/spec/code/ai-spec/profiles/",
         )
     )
 

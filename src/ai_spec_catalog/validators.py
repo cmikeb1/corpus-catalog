@@ -433,10 +433,10 @@ def spec_epic_dir_exists(config: CatalogConfig, epic_code: str) -> bool:
 def is_spec_owned_module(item: CorpusItem) -> bool:
     return item.source.path.startswith(
         (
-            "projects/spec/code/ai-spec/specs/",
-            "projects/spec/code/ai-spec/profiles/",
             "projects/spec/code/corpus-spec/specs/",
             "projects/spec/code/corpus-spec/profiles/",
+            "projects/spec/code/ai-spec/specs/",
+            "projects/spec/code/ai-spec/profiles/",
         )
     )
 

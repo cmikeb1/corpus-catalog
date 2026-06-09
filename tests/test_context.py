@@ -48,7 +48,7 @@ def test_context_routes_workspace_profile_by_cwd():
         cwd="workspace",
     )
 
-    assert paths[1] == "ai-spec/profiles/human-workspace.md"
+    assert paths[1] == "corpus-spec/profiles/human-workspace.md"
 
 
 def test_context_routes_reference_profile_by_cwd():
@@ -57,7 +57,7 @@ def test_context_routes_reference_profile_by_cwd():
         cwd="reference/tools",
     )
 
-    assert paths[1] == "ai-spec/profiles/reference.md"
+    assert paths[1] == "corpus-spec/profiles/reference.md"
 
 
 def test_context_routes_reference_and_initiatives_profiles_by_cwd():
@@ -67,8 +67,8 @@ def test_context_routes_reference_and_initiatives_profiles_by_cwd():
     )
 
     assert paths[1:3] == [
-        "ai-spec/profiles/reference.md",
-        "ai-spec/profiles/initiatives.md",
+        "corpus-spec/profiles/reference.md",
+        "corpus-spec/profiles/initiatives.md",
     ]
 
 
@@ -78,8 +78,8 @@ def test_context_routes_catalog_tasks_to_project_and_tooling_docs():
         cwd="projects/spec/code/catalog",
     )
 
-    assert "ai-spec/profiles/project.md" in paths
-    assert "ai-spec/specs/tooling-and-validation.md" in paths
+    assert "corpus-spec/profiles/project.md" in paths
+    assert "corpus-spec/specs/tooling-and-validation.md" in paths
 
 
 def test_context_routes_corpus_identity_goals_to_identity_spec():
@@ -88,7 +88,7 @@ def test_context_routes_corpus_identity_goals_to_identity_spec():
         cwd="projects/spec/code/catalog",
     )
 
-    assert "ai-spec/specs/corpus-identity.md" in paths
+    assert "corpus-spec/specs/corpus-identity.md" in paths
 
 
 def test_context_routes_profile_module_goals_to_profile_composition_spec():
@@ -97,4 +97,4 @@ def test_context_routes_profile_module_goals_to_profile_composition_spec():
         cwd="projects/demo",
     )
 
-    assert "ai-spec/specs/profile-composition.md" in paths
+    assert "corpus-spec/specs/profile-composition.md" in paths

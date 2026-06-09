@@ -206,7 +206,7 @@ def test_beta_stewardship_warns_when_spec_module_has_no_owner(tmp_path):
     items = [
         item("AI.md", "handbook", front_matter=ai_front_matter()),
         item(
-            "projects/spec/code/ai-spec/specs/example.md",
+            "projects/spec/code/corpus-spec/specs/example.md",
             "spec-module",
             front_matter={"ai_spec_status": "beta"},
         ),
@@ -223,7 +223,7 @@ def test_beta_stewardship_warns_when_profile_owner_epic_is_missing(tmp_path):
     items = [
         item("AI.md", "handbook", front_matter=ai_front_matter()),
         item(
-            "projects/spec/code/ai-spec/profiles/example.md",
+            "projects/spec/code/corpus-spec/profiles/example.md",
             "profile-module",
             text="Beta stewardship epic: Spec project `999-MISSING`.\n",
             front_matter={"ai_spec_status": "beta"},
@@ -248,7 +248,7 @@ def test_beta_stewardship_accepts_existing_owner_epic(tmp_path):
     items = [
         item("AI.md", "handbook", front_matter=ai_front_matter()),
         item(
-            "projects/spec/code/ai-spec/profiles/example.md",
+            "projects/spec/code/corpus-spec/profiles/example.md",
             "profile-module",
             text="Beta stewardship epic: Spec project `999-MISSING`.\n",
             front_matter={"ai_spec_status": "beta"},
@@ -265,7 +265,7 @@ def test_beta_stewardship_ignores_consumed_release_checkout(tmp_path):
     items = [
         item("AI.md", "handbook", front_matter=ai_front_matter()),
         item(
-            "ai-spec/profiles/example.md",
+            "corpus-spec/profiles/example.md",
             "profile-module",
             front_matter={"ai_spec_status": "beta"},
         ),
