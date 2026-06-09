@@ -142,9 +142,10 @@ MVP artifacts:
 
 - `.corpus/AI.md` — generated orientation for humans and AI tools;
 - `.corpus/manifest.json` — Catalog version, baseline, freshness,
-  source fingerprint, artifacts, and conformance markers;
+  source fingerprint, artifacts, conformance markers, and spec/profile
+  module inventory;
 - `.corpus/catalog.sqlite` — durable source, validation, and
-  conformance tables;
+  conformance tables, plus the reusable `spec_modules` registry;
 - `.corpus/indexes/sources.jsonl` — portable source inventory;
 - `.corpus/indexes/validation-issues.jsonl` — portable validation
   issue export;

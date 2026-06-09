@@ -16,6 +16,7 @@ from ai_spec_catalog.models import (
     ConformanceMarker,
     CorpusItem,
     SourceRef,
+    SpecModule,
     ValidationIssue,
 )
 from ai_spec_catalog.validators import validate_corpus
@@ -61,6 +62,7 @@ def index_catalog(config: CatalogConfig) -> CatalogManifest:
     indexed_at = utc_now()
     items = load_corpus(config)
     markers = extract_conformance_markers(items)
+    spec_modules = extract_spec_modules(items)
     baseline = select_ai_spec_baseline(markers)
     issues = validate_corpus(items, config)
     fingerprint = source_fingerprint(items)
@@ -68,7 +70,7 @@ def index_catalog(config: CatalogConfig) -> CatalogManifest:
     write_sources_jsonl(config, items)
     write_validation_jsonl(config, issues)
     write_validation_report(config, issues, baseline, fingerprint, indexed_at)
-    write_sqlite(config, items, issues, markers, indexed_at)
+    write_sqlite(config, items, issues, markers, spec_modules, indexed_at)
     write_last_run(config, items, issues, fingerprint, indexed_at)
 
     manifest = CatalogManifest(
@@ -83,6 +85,7 @@ def index_catalog(config: CatalogConfig) -> CatalogManifest:
         validation_issue_count=len(issues),
         artifacts=current_artifacts(config),
         conformance=markers,
+        spec_modules=spec_modules,
     )
     write_manifest(config, manifest)
     write_catalog_ai(config, manifest)
@@ -252,6 +255,7 @@ def write_sqlite(
     items: list[CorpusItem],
     issues: list[ValidationIssue],
     markers: list[ConformanceMarker],
+    spec_modules: list[SpecModule],
     indexed_at: str,
 ) -> None:
     sqlite_path = config.catalog_dir / "catalog.sqlite"
@@ -296,9 +300,22 @@ def write_sqlite(
               indexed_at text not null
             );
 
+            create table if not exists spec_modules (
+              path text primary key,
+              module_type text not null,
+              module_id text not null,
+              title text,
+              doc_type text,
+              status text,
+              ai_spec_version text,
+              source_checkout text,
+              indexed_at text not null
+            );
+
             delete from sources;
             delete from validation_issues;
             delete from conformance_markers;
+            delete from spec_modules;
             """
         )
         connection.executemany(
@@ -390,6 +407,35 @@ def write_sqlite(
                 for marker in markers
             ],
         )
+        connection.executemany(
+            """
+            insert into spec_modules (
+              path,
+              module_type,
+              module_id,
+              title,
+              doc_type,
+              status,
+              ai_spec_version,
+              source_checkout,
+              indexed_at
+            ) values (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            [
+                (
+                    module.path,
+                    module.module_type,
+                    module.module_id,
+                    module.title,
+                    module.doc_type,
+                    module.status,
+                    module.ai_spec_version,
+                    module.source_checkout,
+                    indexed_at,
+                )
+                for module in spec_modules
+            ],
+        )
         try_create_fts(connection, items)
 
 
@@ -477,7 +523,8 @@ def write_catalog_ai(config: CatalogConfig, manifest: CatalogManifest) -> None:
         "",
         "## What Lives Here",
         "",
-        "- `manifest.json` records freshness, source fingerprint, artifacts, and conformance markers.",
+        "- `manifest.json` records freshness, source fingerprint, artifacts, "
+        "conformance markers, and spec/profile module inventory.",
         "- `catalog.sqlite` is the durable local query surface.",
         "- `indexes/*.jsonl` are portable machine-readable exports.",
         "- `reports/validation.md` is the human validation receipt.",
@@ -488,6 +535,7 @@ def write_catalog_ai(config: CatalogConfig, manifest: CatalogManifest) -> None:
         f"- Generated: `{manifest.generated_at or 'not indexed'}`",
         f"- AI-SPEC baseline: `{manifest.ai_spec_baseline or 'unknown'}`",
         f"- Source count: `{manifest.source_count}`",
+        f"- Spec/profile modules: `{len(manifest.spec_modules)}`",
         f"- Validation issues: `{manifest.validation_issue_count}`",
         "",
         "## Commands",
@@ -519,6 +567,59 @@ def extract_conformance_markers(items: list[CorpusItem]) -> list[ConformanceMark
             )
         )
     return sorted(markers, key=lambda marker: marker.path)
+
+
+def extract_spec_modules(items: list[CorpusItem]) -> list[SpecModule]:
+    modules: list[SpecModule] = []
+    for item in items:
+        module_type = spec_module_type(item)
+        if module_type is None:
+            continue
+
+        modules.append(
+            SpecModule(
+                path=item.source.path,
+                module_type=module_type,
+                module_id=spec_module_id(item, module_type),
+                title=item.title,
+                doc_type=string_or_none(item.front_matter.get("doc_type")),
+                status=string_or_none(item.front_matter.get("ai_spec_status")),
+                ai_spec_version=string_or_none(item.front_matter.get("ai_spec_version")),
+                source_checkout=spec_source_checkout(item.source.path),
+            )
+        )
+    return sorted(modules, key=lambda module: module.path)
+
+
+def spec_module_type(item: CorpusItem):
+    if item.source.kind == "spec-root":
+        return "root-spec"
+    if item.source.kind == "spec-module":
+        return "spec"
+    if item.source.kind == "profile-module":
+        return "profile"
+    return None
+
+
+def spec_module_id(item: CorpusItem, module_type: str) -> str:
+    if module_type == "spec":
+        value = item.front_matter.get("ai_spec_spec_id")
+    elif module_type == "profile":
+        value = item.front_matter.get("ai_spec_profile_id")
+    else:
+        value = "root"
+
+    if value:
+        return str(value)
+    return Path(item.source.path).stem
+
+
+def spec_source_checkout(path: str) -> str | None:
+    if path.startswith(("projects/spec/code/ai-spec/", "projects/spec/code/corpus-spec/")):
+        return "source-checkout"
+    if path.startswith(("ai-spec/", "corpus-spec/")):
+        return "tier-root"
+    return None
 
 
 def select_ai_spec_baseline(markers: list[ConformanceMarker]) -> str | None:

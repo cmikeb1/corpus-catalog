@@ -176,6 +176,12 @@ def first_non_empty_line(body: str) -> str | None:
 def source_kind(rel_path: str):
     if rel_path == "AI.md" or rel_path.endswith("/AI.md"):
         return "handbook"
+    if is_spec_root_path(rel_path):
+        return "spec-root"
+    if is_spec_module_path(rel_path):
+        return "spec-module"
+    if is_profile_module_path(rel_path):
+        return "profile-module"
     if rel_path.endswith("/assets/OVERVIEW.md"):
         return "overview"
     if rel_path.endswith("/TASKS.md") and "/assets/epics/" in rel_path:
@@ -190,9 +196,51 @@ def source_kind(rel_path: str):
         return "registry"
     if rel_path.endswith("/README.md"):
         return "readme"
-    if rel_path.startswith("ai-spec/"):
+    if rel_path.startswith(
+        (
+            "ai-spec/",
+            "corpus-spec/",
+            "projects/spec/code/ai-spec/",
+            "projects/spec/code/corpus-spec/",
+        )
+    ):
         return "spec"
     return "note"
+
+
+def is_spec_root_path(rel_path: str) -> bool:
+    return rel_path in {
+        "ai-spec/AI-SPEC.md",
+        "ai-spec/corpus-spec.md",
+        "corpus-spec/AI-SPEC.md",
+        "corpus-spec/corpus-spec.md",
+        "projects/spec/code/ai-spec/AI-SPEC.md",
+        "projects/spec/code/ai-spec/corpus-spec.md",
+        "projects/spec/code/corpus-spec/AI-SPEC.md",
+        "projects/spec/code/corpus-spec/corpus-spec.md",
+    }
+
+
+def is_spec_module_path(rel_path: str) -> bool:
+    return rel_path.startswith(
+        (
+            "ai-spec/specs/",
+            "corpus-spec/specs/",
+            "projects/spec/code/ai-spec/specs/",
+            "projects/spec/code/corpus-spec/specs/",
+        )
+    )
+
+
+def is_profile_module_path(rel_path: str) -> bool:
+    return rel_path.startswith(
+        (
+            "ai-spec/profiles/",
+            "corpus-spec/profiles/",
+            "projects/spec/code/ai-spec/profiles/",
+            "projects/spec/code/corpus-spec/profiles/",
+        )
+    )
 
 
 def _iter_markdown_paths(config: CatalogConfig):

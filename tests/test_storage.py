@@ -49,17 +49,33 @@ def test_index_persists_inventory_validation_and_conformance(tmp_path):
 
     manifest = index_catalog(config)
 
-    assert manifest.source_count == 6
+    assert manifest.source_count == 9
     assert manifest.validation_issue_count == 0
     assert manifest.ai_spec_baseline == "v0.18"
+    assert {module.path: module.module_type for module in manifest.spec_modules} == {
+        "ai-spec/AI-SPEC.md": "root-spec",
+        "ai-spec/profiles/project.md": "profile",
+        "ai-spec/specs/profile-composition.md": "spec",
+    }
+    assert {module.path: module.module_id for module in manifest.spec_modules} == {
+        "ai-spec/AI-SPEC.md": "root",
+        "ai-spec/profiles/project.md": "project",
+        "ai-spec/specs/profile-composition.md": "profile-composition",
+    }
     assert {marker.path for marker in manifest.conformance} == {
         "AI.md",
+        "ai-spec/AI-SPEC.md",
+        "ai-spec/profiles/project.md",
+        "ai-spec/specs/profile-composition.md",
         "projects/demo/AI.md",
     }
     assert {
         marker.path: marker.ai_spec_version for marker in manifest.conformance
     } == {
         "AI.md": "v0.18",
+        "ai-spec/AI-SPEC.md": "v0.18",
+        "ai-spec/profiles/project.md": "v0.18",
+        "ai-spec/specs/profile-composition.md": "v0.18",
         "projects/demo/AI.md": "v0.16",
     }
 
@@ -76,10 +92,28 @@ def test_index_persists_inventory_validation_and_conformance(tmp_path):
         marker_count = connection.execute(
             "select count(*) from conformance_markers"
         ).fetchone()[0]
+        spec_module_rows = connection.execute(
+            """
+            select path, module_type, module_id, status, source_checkout
+            from spec_modules
+            order by path
+            """
+        ).fetchall()
 
-    assert source_count == 6
+    assert source_count == 9
     assert issue_count == 0
-    assert marker_count == 2
+    assert marker_count == 5
+    assert spec_module_rows == [
+        ("ai-spec/AI-SPEC.md", "root-spec", "root", None, "tier-root"),
+        ("ai-spec/profiles/project.md", "profile", "project", "stable", "tier-root"),
+        (
+            "ai-spec/specs/profile-composition.md",
+            "spec",
+            "profile-composition",
+            "stable",
+            "tier-root",
+        ),
+    ]
     assert catalog_status(config).state == "fresh"
 
 
@@ -91,6 +125,17 @@ def test_default_source_scope_includes_spike_and_epic_reference(tmp_path):
 
     assert "projects/demo/assets/epics/001-DEMO/SPIKE.md" in paths
     assert "projects/demo/assets/epics/001-DEMO/reference/demo-candidate.md" in paths
+
+
+def test_spec_and_profile_modules_are_first_class_sources(tmp_path):
+    root = copy_fixture(tmp_path)
+    config = CatalogConfig(corpus_root=root)
+
+    items = {item.source.path: item for item in load_corpus(config)}
+
+    assert items["ai-spec/AI-SPEC.md"].source.kind == "spec-root"
+    assert items["ai-spec/specs/profile-composition.md"].source.kind == "spec-module"
+    assert items["ai-spec/profiles/project.md"].source.kind == "profile-module"
 
 
 def test_corpusignore_excludes_package_local_code_markdown(tmp_path):

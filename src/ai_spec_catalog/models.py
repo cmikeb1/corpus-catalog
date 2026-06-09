@@ -14,10 +14,14 @@ SourceKind = Literal[
     "reference",
     "registry",
     "readme",
+    "spec-root",
+    "spec-module",
+    "profile-module",
     "spec",
     "note",
 ]
 CatalogState = Literal["missing", "stale", "fresh"]
+SpecModuleType = Literal["root-spec", "spec", "profile"]
 
 
 class SourceRef(BaseModel):
@@ -113,6 +117,21 @@ class ConformanceMarker(BaseModel):
     ai_spec_betas: list[str] = Field(default_factory=list)
 
 
+class SpecModule(BaseModel):
+    """AI-SPEC root/spec/profile module discovered in source."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    path: str
+    module_type: SpecModuleType
+    module_id: str
+    title: str | None = None
+    doc_type: str | None = None
+    status: str | None = None
+    ai_spec_version: str | None = None
+    source_checkout: str | None = None
+
+
 class CatalogArtifact(BaseModel):
     """Generated artifact tracked in the Catalog manifest."""
 
@@ -140,6 +159,7 @@ class CatalogManifest(BaseModel):
     validation_issue_count: int = 0
     artifacts: list[CatalogArtifact] = Field(default_factory=list)
     conformance: list[ConformanceMarker] = Field(default_factory=list)
+    spec_modules: list[SpecModule] = Field(default_factory=list)
 
 
 class CatalogStatus(BaseModel):
