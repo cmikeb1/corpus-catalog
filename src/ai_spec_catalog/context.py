@@ -111,6 +111,9 @@ def routed_profile_and_spec_paths(
     if any(term in routing_text for term in PROFILE_COMPOSITION_TERMS):
         add_module("spec", "profile-composition")
 
+    if any(term in routing_text for term in CORPUS_IDENTITY_TERMS):
+        add_module("spec", "corpus-identity")
+
     return paths
 
 
@@ -139,6 +142,20 @@ PROFILE_COMPOSITION_TERMS = (
     "packaging",
     "profile",
     "profiles",
+)
+
+CORPUS_IDENTITY_TERMS = (
+    "--corpus",
+    "--mount",
+    "corpus identity",
+    "corpus uri",
+    "corpus://",
+    "mount identity",
+    "mount inventory",
+    "mount uri",
+    "node id",
+    "realm",
+    "sync transport",
 )
 
 

@@ -55,6 +55,7 @@ The initial deterministic surface is:
 - model AI-SPEC root, spec, and profile modules as first-class sources;
 - route context packets through owning profile/spec modules before
   lexical search;
+- parse corpus identity and mount identity from the tier-root entry;
 - search corpus items lexically;
 - assemble a source-cited context packet for a goal and cwd;
 - run cheap validation checks, starting with root handbook presence and
@@ -89,6 +90,7 @@ From the corpus root:
 catalog init
 catalog index
 catalog status
+catalog mounts
 ```
 
 ```bash
@@ -111,6 +113,7 @@ Search:
 
 ```bash
 catalog search --root ../../.. --query "context packet"
+catalog search --corpus work/brief --query "context packet"
 ```
 
 `search` prints compact source hits for command-line use: source
@@ -122,7 +125,25 @@ Validate:
 
 ```bash
 catalog validate --root ../../.. --format json
+catalog validate --corpus corpus://cmikeb/work/brief --format json
 ```
+
+Mount inventory:
+
+```bash
+catalog mounts --format json
+catalog mounts --no-register
+```
+
+`mounts` reports the current declared corpus/mount identity and, by
+default, records the current mount in the per-user registry at
+`~/.corpus/mounts.json`. Set `CORPUS_HOME` to place that registry
+somewhere else for tests or isolated runs.
+
+`context`, `search`, and `validate` accept `--corpus` and `--mount`
+selectors. Selectors must match the declared current root identity by
+canonical URI or alias, such as `work/brief` or `work/brief@bilby`;
+Catalog does not guess paths for a selector that names another corpus.
 
 Project creation dry-run, from the corpus root:
 
@@ -144,11 +165,12 @@ root. `catalog index` refreshes it from source Markdown.
 MVP artifacts:
 
 - `.corpus/AI.md` — generated orientation for humans and AI tools;
-- `.corpus/manifest.json` — Catalog version, baseline, freshness,
-  source fingerprint, artifacts, conformance markers, and spec/profile
-  module inventory;
+- `.corpus/manifest.json` — Catalog version, corpus identity, current
+  mount identity, baseline, freshness, source fingerprint, artifacts,
+  conformance markers, and spec/profile module inventory;
 - `.corpus/catalog.sqlite` — durable source, validation, and
-  conformance tables, plus the reusable `spec_modules` registry;
+  conformance tables, plus reusable `spec_modules`,
+  `corpus_identity`, and `corpus_mounts` registries;
 - `.corpus/indexes/sources.jsonl` — portable source inventory;
 - `.corpus/indexes/validation-issues.jsonl` — portable validation
   issue export;

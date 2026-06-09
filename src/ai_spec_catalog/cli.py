@@ -7,8 +7,14 @@ import sys
 
 from ai_spec_catalog.config import CatalogConfig
 from ai_spec_catalog.context import build_context_packet
-from ai_spec_catalog.corpus import search_corpus
-from ai_spec_catalog.models import CatalogStatus
+from ai_spec_catalog.corpus import load_corpus, search_corpus
+from ai_spec_catalog.identity import (
+    CorpusIdentityError,
+    build_mount_inventory,
+    extract_current_mount,
+    resolve_current_mount_selector,
+)
+from ai_spec_catalog.models import CatalogStatus, MountInventory
 from ai_spec_catalog.projects import build_project_creation_plan
 from ai_spec_catalog.storage import (
     catalog_status,
@@ -36,17 +42,29 @@ def main() -> None:
 
     context_parser = subparsers.add_parser("context")
     add_root_argument(context_parser)
+    add_identity_selector_arguments(context_parser)
     context_parser.add_argument("--cwd")
     context_parser.add_argument("--goal", required=True)
 
     search_parser = subparsers.add_parser("search")
     add_root_argument(search_parser)
+    add_identity_selector_arguments(search_parser)
     search_parser.add_argument("--query", required=True)
     search_parser.add_argument("--limit", type=int, default=10)
 
     validate_parser = subparsers.add_parser("validate")
     add_root_argument(validate_parser)
+    add_identity_selector_arguments(validate_parser)
     validate_parser.add_argument("--format", choices=("json", "markdown"), default="json")
+
+    mounts_parser = subparsers.add_parser("mounts")
+    add_root_argument(mounts_parser)
+    mounts_parser.add_argument("--format", choices=("text", "json"), default="text")
+    mounts_parser.add_argument(
+        "--no-register",
+        action="store_true",
+        help="Report mounts without updating the per-user registry.",
+    )
 
     project_parser = subparsers.add_parser("project")
     project_subparsers = project_parser.add_subparsers(
@@ -87,12 +105,15 @@ def main() -> None:
         else:
             print(format_status(status))
     elif args.command == "context":
+        ensure_identity_selection(config, args.corpus, args.mount, parser)
         packet = build_context_packet(goal=args.goal, cwd=args.cwd, config=config)
         print(packet.model_dump_json(indent=2))
     elif args.command == "search":
+        ensure_identity_selection(config, args.corpus, args.mount, parser)
         items = search_corpus(args.query, load_index_or_corpus(config), limit=args.limit)
         print(json.dumps(format_search_results(args.query, items), indent=2))
     elif args.command == "validate":
+        ensure_identity_selection(config, args.corpus, args.mount, parser)
         index_catalog(config)
         issues = validate_corpus(load_index_or_corpus(config), config)
         if args.format == "markdown":
@@ -100,6 +121,19 @@ def main() -> None:
             print(report_path.read_text(encoding="utf-8"))
         else:
             print(json.dumps([issue.model_dump(mode="json") for issue in issues], indent=2))
+    elif args.command == "mounts":
+        try:
+            inventory = build_mount_inventory(
+                load_corpus(config),
+                config,
+                register=not args.no_register,
+            )
+        except CorpusIdentityError as error:
+            parser.error(str(error))
+        if args.format == "json":
+            print(inventory.model_dump_json(indent=2))
+        else:
+            print(format_mount_inventory(inventory))
     elif args.command == "project" and args.project_command == "new":
         plan = build_project_creation_plan(
             name=args.name,
@@ -118,6 +152,34 @@ def add_root_argument(parser: argparse.ArgumentParser) -> None:
         default=".",
         help="Corpus root directory. Defaults to the current working directory.",
     )
+
+
+def add_identity_selector_arguments(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "--corpus",
+        help="Declared corpus URI or short alias such as work/brief.",
+    )
+    parser.add_argument(
+        "--mount",
+        help="Declared mount URI or short alias such as work/brief@bilby.",
+    )
+
+
+def ensure_identity_selection(
+    config: CatalogConfig,
+    corpus_selector: str | None,
+    mount_selector: str | None,
+    parser: argparse.ArgumentParser,
+) -> None:
+    try:
+        mount = extract_current_mount(load_corpus(config), config)
+        resolve_current_mount_selector(
+            mount,
+            corpus_selector=corpus_selector,
+            mount_selector=mount_selector,
+        )
+    except CorpusIdentityError as error:
+        parser.error(str(error))
 
 
 def looks_like_corpus_root(path: Path) -> bool:
@@ -188,6 +250,23 @@ def format_status(status: CatalogStatus) -> str:
         lines.append(f"Generated: {status.manifest.generated_at}")
     if status.manifest and status.manifest.ai_spec_baseline:
         lines.append(f"AI-SPEC baseline: {status.manifest.ai_spec_baseline}")
+    if status.current_mount:
+        lines.extend(
+            [
+                f"Corpus URI: {status.current_mount.corpus_uri}",
+                f"Mount URI: {status.current_mount.mount_uri}",
+                f"Realm: {status.current_mount.realm}",
+                f"Node: {status.current_mount.node_id}",
+                f"Sync transport: {status.current_mount.sync_transport or 'unknown'}",
+            ]
+        )
+    if status.mount_sync_status:
+        lines.append(
+            "Mount sync: "
+            f"{status.mount_sync_status.state} "
+            f"({status.mount_sync_status.confidence}) - "
+            f"{status.mount_sync_status.detail}"
+        )
     if status.missing_artifacts:
         lines.append("Missing artifacts:")
         lines.extend(f"- {artifact}" for artifact in status.missing_artifacts)
@@ -197,6 +276,42 @@ def format_status(status: CatalogStatus) -> str:
     if status.next_commands:
         lines.append("Next commands:")
         lines.extend(f"- {command}" for command in status.next_commands)
+    return "\n".join(lines)
+
+
+def format_mount_inventory(inventory: MountInventory) -> str:
+    lines = [
+        f"Registry: {inventory.registry_path}",
+        f"Registry updated: {'yes' if inventory.registry_updated else 'no'}",
+    ]
+    if inventory.current_mount is None:
+        lines.append("Current mount: unknown")
+    else:
+        mount = inventory.current_mount
+        lines.extend(
+            [
+                f"Current mount: {mount.mount_uri}",
+                f"Logical corpus: {mount.corpus_uri}",
+                f"Aliases: {', '.join(mount.aliases)}",
+                f"Owner: {mount.owner_id}",
+                f"Realm: {mount.realm}",
+                f"Tier: {mount.tier}",
+                f"Node: {mount.node_id}",
+                f"Sync transport: {mount.sync_transport or 'unknown'}",
+            ]
+        )
+    if inventory.sync_status:
+        lines.append(
+            "Sync status: "
+            f"{inventory.sync_status.state} "
+            f"({inventory.sync_status.confidence}) - "
+            f"{inventory.sync_status.detail}"
+        )
+    if inventory.known_mounts:
+        lines.append("Known mounts:")
+        lines.extend(f"- {mount.mount_uri} -> {mount.root_path}" for mount in inventory.known_mounts)
+    else:
+        lines.append("Known mounts: none")
     return "\n".join(lines)
 
 

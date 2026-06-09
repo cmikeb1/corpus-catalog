@@ -22,6 +22,7 @@ SourceKind = Literal[
 ]
 CatalogState = Literal["missing", "stale", "fresh"]
 SpecModuleType = Literal["root-spec", "spec", "profile"]
+SyncConfidence = Literal["git", "local-metadata", "declared-only"]
 
 
 class SourceRef(BaseModel):
@@ -132,6 +133,69 @@ class SpecModule(BaseModel):
     source_checkout: str | None = None
 
 
+class CorpusIdentity(BaseModel):
+    """Logical AI-SPEC corpus identity declared by a corpus root."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    corpus_uri: str
+    owner_id: str
+    realm: str
+    tier: str
+    aliases: list[str] = Field(default_factory=list)
+
+
+class CorpusMount(BaseModel):
+    """One local mount of a logical corpus on a node."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    corpus_uri: str
+    mount_uri: str
+    owner_id: str
+    realm: str
+    tier: str
+    node_id: str
+    sync_transport: str | None = None
+    root_path: str
+    aliases: list[str] = Field(default_factory=list)
+
+
+class KnownCorpusMount(CorpusMount):
+    """A mount recorded in the per-user corpus registry."""
+
+    registered_at: str | None = None
+    last_seen_at: str | None = None
+
+
+class MountSyncStatus(BaseModel):
+    """Realm-specific local freshness signal, separate from validation."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    realm: str
+    sync_transport: str | None = None
+    confidence: SyncConfidence
+    state: str
+    detail: str
+    branch: str | None = None
+    commit: str | None = None
+    dirty_paths: int | None = None
+
+
+class MountInventory(BaseModel):
+    """Current and known corpus mounts visible to Catalog."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: int = 1
+    registry_path: str
+    current_mount: CorpusMount | None = None
+    known_mounts: list[KnownCorpusMount] = Field(default_factory=list)
+    registry_updated: bool = False
+    sync_status: MountSyncStatus | None = None
+
+
 class CatalogArtifact(BaseModel):
     """Generated artifact tracked in the Catalog manifest."""
 
@@ -157,6 +221,8 @@ class CatalogManifest(BaseModel):
     source_fingerprint: str | None = None
     source_count: int = 0
     validation_issue_count: int = 0
+    corpus_identity: CorpusIdentity | None = None
+    current_mount: CorpusMount | None = None
     artifacts: list[CatalogArtifact] = Field(default_factory=list)
     conformance: list[ConformanceMarker] = Field(default_factory=list)
     spec_modules: list[SpecModule] = Field(default_factory=list)
@@ -174,6 +240,8 @@ class CatalogStatus(BaseModel):
     missing_artifacts: list[str] = Field(default_factory=list)
     stale_reasons: list[str] = Field(default_factory=list)
     next_commands: list[str] = Field(default_factory=list)
+    current_mount: CorpusMount | None = None
+    mount_sync_status: MountSyncStatus | None = None
     manifest: CatalogManifest | None = None
 
 

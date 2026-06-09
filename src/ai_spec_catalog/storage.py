@@ -9,12 +9,19 @@ from typing import Any
 
 from ai_spec_catalog.config import CatalogConfig
 from ai_spec_catalog.corpus import load_corpus, source_fingerprint
+from ai_spec_catalog.identity import (
+    CorpusIdentityError,
+    current_identity,
+    extract_current_mount,
+    mount_sync_status,
+)
 from ai_spec_catalog.models import (
     CatalogArtifact,
     CatalogManifest,
     CatalogStatus,
     ConformanceMarker,
     CorpusItem,
+    CorpusMount,
     SourceRef,
     SpecModule,
     ValidationIssue,
@@ -39,12 +46,15 @@ def init_catalog(config: CatalogConfig) -> CatalogManifest:
     """Create the generated .corpus workbench without indexing sources."""
 
     ensure_catalog_dirs(config)
+    current_mount = safe_extract_current_mount(load_corpus(config), config)
     manifest = CatalogManifest(
         schema_version=CATALOG_SCHEMA_VERSION,
         catalog_version=catalog_version(),
         corpus_root=str(config.corpus_root),
         catalog_dir=str(config.catalog_dir),
         generated_at=utc_now(),
+        corpus_identity=current_identity(current_mount),
+        current_mount=current_mount,
         artifacts=current_artifacts(config),
     )
     write_manifest(config, manifest)
@@ -63,15 +73,32 @@ def index_catalog(config: CatalogConfig) -> CatalogManifest:
     items = load_corpus(config)
     markers = extract_conformance_markers(items)
     spec_modules = extract_spec_modules(items)
+    current_mount = safe_extract_current_mount(items, config)
+    corpus_identity = current_identity(current_mount)
     baseline = select_ai_spec_baseline(markers)
     issues = validate_corpus(items, config)
     fingerprint = source_fingerprint(items)
 
     write_sources_jsonl(config, items)
     write_validation_jsonl(config, issues)
-    write_validation_report(config, issues, baseline, fingerprint, indexed_at)
-    write_sqlite(config, items, issues, markers, spec_modules, indexed_at)
-    write_last_run(config, items, issues, fingerprint, indexed_at)
+    write_validation_report(
+        config,
+        issues,
+        baseline,
+        fingerprint,
+        indexed_at,
+        current_mount,
+    )
+    write_sqlite(
+        config,
+        items,
+        issues,
+        markers,
+        spec_modules,
+        current_mount,
+        indexed_at,
+    )
+    write_last_run(config, items, issues, fingerprint, indexed_at, current_mount)
 
     manifest = CatalogManifest(
         schema_version=CATALOG_SCHEMA_VERSION,
@@ -83,6 +110,8 @@ def index_catalog(config: CatalogConfig) -> CatalogManifest:
         source_fingerprint=fingerprint,
         source_count=len(items),
         validation_issue_count=len(issues),
+        corpus_identity=corpus_identity,
+        current_mount=current_mount,
         artifacts=current_artifacts(config),
         conformance=markers,
         spec_modules=spec_modules,
@@ -119,6 +148,12 @@ def catalog_status(config: CatalogConfig) -> CatalogStatus:
             missing_artifacts=missing_artifacts,
             stale_reasons=stale_reasons,
             next_commands=[f"catalog init --root {config.corpus_root}"],
+            current_mount=manifest.current_mount if manifest else None,
+            mount_sync_status=(
+                mount_sync_status(config, manifest.current_mount)
+                if manifest and manifest.current_mount
+                else None
+            ),
             manifest=manifest,
         )
 
@@ -147,6 +182,8 @@ def catalog_status(config: CatalogConfig) -> CatalogStatus:
         missing_artifacts=missing_artifacts,
         stale_reasons=stale_reasons,
         next_commands=next_commands,
+        current_mount=manifest.current_mount,
+        mount_sync_status=mount_sync_status(config, manifest.current_mount),
         manifest=manifest,
     )
 
@@ -202,6 +239,15 @@ def load_index_or_corpus(config: CatalogConfig) -> list[CorpusItem]:
     return load_fresh_indexed_corpus(config) or load_corpus(config)
 
 
+def safe_extract_current_mount(
+    items: list[CorpusItem], config: CatalogConfig
+) -> CorpusMount | None:
+    try:
+        return extract_current_mount(items, config)
+    except CorpusIdentityError:
+        return None
+
+
 def read_manifest(config: CatalogConfig) -> CatalogManifest | None:
     path = config.catalog_dir / "manifest.json"
     if not path.exists():
@@ -237,6 +283,7 @@ def write_last_run(
     issues: list[ValidationIssue],
     fingerprint: str,
     indexed_at: str,
+    current_mount: CorpusMount | None,
 ) -> None:
     write_json(
         config.catalog_dir / "jobs" / "last-run.json",
@@ -246,6 +293,9 @@ def write_last_run(
             "source_count": len(items),
             "validation_issue_count": len(issues),
             "source_fingerprint": fingerprint,
+            "current_mount": (
+                current_mount.model_dump(mode="json") if current_mount else None
+            ),
         },
     )
 
@@ -256,6 +306,7 @@ def write_sqlite(
     issues: list[ValidationIssue],
     markers: list[ConformanceMarker],
     spec_modules: list[SpecModule],
+    current_mount: CorpusMount | None,
     indexed_at: str,
 ) -> None:
     sqlite_path = config.catalog_dir / "catalog.sqlite"
@@ -312,10 +363,34 @@ def write_sqlite(
               indexed_at text not null
             );
 
+            create table if not exists corpus_identity (
+              corpus_uri text primary key,
+              owner_id text not null,
+              realm text not null,
+              tier text not null,
+              aliases_json text not null,
+              indexed_at text not null
+            );
+
+            create table if not exists corpus_mounts (
+              mount_uri text primary key,
+              corpus_uri text not null,
+              owner_id text not null,
+              realm text not null,
+              tier text not null,
+              node_id text not null,
+              sync_transport text,
+              root_path text not null,
+              aliases_json text not null,
+              indexed_at text not null
+            );
+
             delete from sources;
             delete from validation_issues;
             delete from conformance_markers;
             delete from spec_modules;
+            delete from corpus_identity;
+            delete from corpus_mounts;
             """
         )
         connection.executemany(
@@ -436,6 +511,57 @@ def write_sqlite(
                 for module in spec_modules
             ],
         )
+        if current_mount is not None:
+            identity = current_identity(current_mount)
+            if identity is not None:
+                connection.execute(
+                    """
+                    insert into corpus_identity (
+                      corpus_uri,
+                      owner_id,
+                      realm,
+                      tier,
+                      aliases_json,
+                      indexed_at
+                    ) values (?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        identity.corpus_uri,
+                        identity.owner_id,
+                        identity.realm,
+                        identity.tier,
+                        json.dumps(identity.aliases, sort_keys=True),
+                        indexed_at,
+                    ),
+                )
+            connection.execute(
+                """
+                insert into corpus_mounts (
+                  mount_uri,
+                  corpus_uri,
+                  owner_id,
+                  realm,
+                  tier,
+                  node_id,
+                  sync_transport,
+                  root_path,
+                  aliases_json,
+                  indexed_at
+                ) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    current_mount.mount_uri,
+                    current_mount.corpus_uri,
+                    current_mount.owner_id,
+                    current_mount.realm,
+                    current_mount.tier,
+                    current_mount.node_id,
+                    current_mount.sync_transport,
+                    current_mount.root_path,
+                    json.dumps(current_mount.aliases, sort_keys=True),
+                    indexed_at,
+                ),
+            )
         try_create_fts(connection, items)
 
 
@@ -478,6 +604,7 @@ def write_validation_report(
     baseline: str | None,
     fingerprint: str,
     generated_at: str,
+    current_mount: CorpusMount | None = None,
 ) -> None:
     lines = [
         "# Catalog Validation Report",
@@ -485,6 +612,8 @@ def write_validation_report(
         f"Generated: {generated_at}",
         f"Corpus root: `{config.corpus_root}`",
         f"AI-SPEC baseline: `{baseline or 'unknown'}`",
+        f"Corpus URI: `{current_mount.corpus_uri if current_mount else 'unknown'}`",
+        f"Mount URI: `{current_mount.mount_uri if current_mount else 'unknown'}`",
         f"Source fingerprint: `{fingerprint}`",
         f"Issue count: {len(issues)}",
         "",
@@ -537,6 +666,14 @@ def write_catalog_ai(config: CatalogConfig, manifest: CatalogManifest) -> None:
         f"- Source count: `{manifest.source_count}`",
         f"- Spec/profile modules: `{len(manifest.spec_modules)}`",
         f"- Validation issues: `{manifest.validation_issue_count}`",
+        "",
+        "## Corpus Identity",
+        "",
+        f"- Corpus URI: `{manifest.current_mount.corpus_uri if manifest.current_mount else 'unknown'}`",
+        f"- Mount URI: `{manifest.current_mount.mount_uri if manifest.current_mount else 'unknown'}`",
+        f"- Realm: `{manifest.current_mount.realm if manifest.current_mount else 'unknown'}`",
+        f"- Node: `{manifest.current_mount.node_id if manifest.current_mount else 'unknown'}`",
+        f"- Sync transport: `{manifest.current_mount.sync_transport if manifest.current_mount else 'unknown'}`",
         "",
         "## Commands",
         "",

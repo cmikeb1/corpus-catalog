@@ -9,6 +9,7 @@ from ai_spec_catalog.config import (
     CatalogConfig,
 )
 from ai_spec_catalog.corpus import ignore_pattern_matches, load_corpus_ignore_patterns
+from ai_spec_catalog.identity import CorpusIdentityError, extract_current_mount
 from ai_spec_catalog.models import CorpusItem, SourceRef, ValidationIssue
 
 
@@ -68,6 +69,8 @@ def validate_core_rules(
                 baseline=baseline,
             )
         )
+    else:
+        issues.extend(validate_corpus_identity(items, config, baseline))
 
     issues.extend(validate_corpusignore(config, baseline))
 
@@ -108,6 +111,45 @@ def validate_core_rules(
                 )
 
     return issues
+
+
+def validate_corpus_identity(
+    items: list[CorpusItem],
+    config: CatalogConfig,
+    baseline: str | None,
+) -> list[ValidationIssue]:
+    root_item = root_entry_item({item.source.path: item for item in items})
+    if root_item is None:
+        return []
+
+    try:
+        mount = extract_current_mount(items, config)
+    except CorpusIdentityError as error:
+        return [
+            ValidationIssue(
+                code="core-corpus-identity-invalid",
+                severity="warning",
+                message=str(error),
+                source=root_item.source,
+                baseline=baseline,
+            )
+        ]
+
+    if mount is None:
+        return [
+            ValidationIssue(
+                code="core-corpus-identity-missing",
+                severity="warning",
+                message=(
+                    "Tier root does not declare corpus URI, mount URI, "
+                    "owner, realm, tier, node, and sync transport fields."
+                ),
+                source=root_item.source,
+                baseline=baseline,
+            )
+        ]
+
+    return []
 
 
 def validate_spec_and_profile_rules(

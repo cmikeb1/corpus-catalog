@@ -3,6 +3,8 @@ import sys
 from pathlib import Path
 from shutil import copytree
 
+import pytest
+
 from ai_spec_catalog.cli import main
 
 
@@ -28,7 +30,7 @@ def test_index_defaults_root_to_current_working_directory(
     manifest = json.loads(output)
     assert manifest["corpus_root"] == str(root.resolve())
     assert manifest["catalog_dir"] == str(root.resolve() / ".corpus")
-    assert manifest["source_count"] == 13
+    assert manifest["source_count"] == 14
 
 
 def test_no_args_defaults_to_status_in_corpus_root(tmp_path, monkeypatch, capsys):
@@ -116,3 +118,72 @@ def test_search_cli_sees_epic_local_reference(tmp_path, monkeypatch, capsys):
         results[0]["source"]["path"]
         == "projects/demo/assets/epics/001-DEMO/reference/demo-candidate.md"
     )
+
+
+def test_mounts_cli_reports_and_registers_current_mount(
+    tmp_path,
+    monkeypatch,
+    capsys,
+):
+    root = copy_fixture(tmp_path)
+    registry_home = tmp_path / "corpus-home"
+    monkeypatch.setenv("CORPUS_HOME", str(registry_home))
+    monkeypatch.chdir(root)
+    monkeypatch.setattr(sys, "argv", ["catalog", "mounts", "--format", "json"])
+
+    main()
+
+    inventory = json.loads(capsys.readouterr().out)
+    assert inventory["registry_path"] == str(registry_home / "mounts.json")
+    assert inventory["registry_updated"] is True
+    assert inventory["current_mount"]["mount_uri"] == "corpus://cmikeb/work/brief@bilby"
+    assert inventory["known_mounts"][0]["mount_uri"] == (
+        "corpus://cmikeb/work/brief@bilby"
+    )
+
+
+def test_search_cli_accepts_declared_corpus_alias(tmp_path, monkeypatch, capsys):
+    root = copy_fixture(tmp_path)
+    monkeypatch.chdir(root)
+    monkeypatch.setattr(sys, "argv", ["catalog", "index"])
+    main()
+    capsys.readouterr()
+
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "catalog",
+            "search",
+            "--corpus",
+            "work/brief",
+            "--query",
+            "demo project",
+            "--limit",
+            "1",
+        ],
+    )
+    main()
+
+    results = json.loads(capsys.readouterr().out)
+    assert len(results) == 1
+
+
+def test_context_cli_rejects_other_declared_corpus(tmp_path, monkeypatch):
+    root = copy_fixture(tmp_path)
+    monkeypatch.chdir(root)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "catalog",
+            "context",
+            "--corpus",
+            "icloud/brief",
+            "--goal",
+            "demo project",
+        ],
+    )
+
+    with pytest.raises(SystemExit):
+        main()

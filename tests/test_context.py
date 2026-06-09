@@ -82,6 +82,15 @@ def test_context_routes_catalog_tasks_to_project_and_tooling_docs():
     assert "ai-spec/specs/tooling-and-validation.md" in paths
 
 
+def test_context_routes_corpus_identity_goals_to_identity_spec():
+    paths = context_paths(
+        goal="Implement corpus identity, realm, and mount URI behavior",
+        cwd="projects/spec/code/catalog",
+    )
+
+    assert "ai-spec/specs/corpus-identity.md" in paths
+
+
 def test_context_routes_profile_module_goals_to_profile_composition_spec():
     paths = context_paths(
         goal="Review active profile modules, betas, and packaging",

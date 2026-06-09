@@ -30,6 +30,10 @@ def test_init_creates_catalog_workbench_without_source_edits(tmp_path):
     manifest = init_catalog(config)
 
     assert manifest.source_count == 0
+    assert manifest.corpus_identity is not None
+    assert manifest.corpus_identity.corpus_uri == "corpus://cmikeb/work/brief"
+    assert manifest.current_mount is not None
+    assert manifest.current_mount.mount_uri == "corpus://cmikeb/work/brief@bilby"
     assert (root / ".corpus" / "AI.md").exists()
     assert (root / ".corpus" / "manifest.json").exists()
     assert (root / ".corpus" / "indexes").is_dir()
@@ -49,15 +53,27 @@ def test_index_persists_inventory_validation_and_conformance(tmp_path):
 
     manifest = index_catalog(config)
 
-    assert manifest.source_count == 13
+    assert manifest.source_count == 14
     assert manifest.validation_issue_count == 0
     assert manifest.ai_spec_baseline == "v0.18"
+    assert manifest.corpus_identity is not None
+    assert manifest.corpus_identity.corpus_uri == "corpus://cmikeb/work/brief"
+    assert manifest.corpus_identity.aliases == ["work/brief", "cmikeb/work/brief"]
+    assert manifest.current_mount is not None
+    assert manifest.current_mount.mount_uri == "corpus://cmikeb/work/brief@bilby"
+    assert manifest.current_mount.aliases == [
+        "work/brief",
+        "cmikeb/work/brief",
+        "work/brief@bilby",
+        "cmikeb/work/brief@bilby",
+    ]
     assert {module.path: module.module_type for module in manifest.spec_modules} == {
         "ai-spec/AI-SPEC.md": "root-spec",
         "ai-spec/profiles/human-workspace.md": "profile",
         "ai-spec/profiles/initiatives.md": "profile",
         "ai-spec/profiles/project.md": "profile",
         "ai-spec/profiles/reference.md": "profile",
+        "ai-spec/specs/corpus-identity.md": "spec",
         "ai-spec/specs/profile-composition.md": "spec",
         "ai-spec/specs/tooling-and-validation.md": "spec",
     }
@@ -67,6 +83,7 @@ def test_index_persists_inventory_validation_and_conformance(tmp_path):
         "ai-spec/profiles/initiatives.md": "initiatives",
         "ai-spec/profiles/project.md": "project",
         "ai-spec/profiles/reference.md": "reference",
+        "ai-spec/specs/corpus-identity.md": "corpus-identity",
         "ai-spec/specs/profile-composition.md": "profile-composition",
         "ai-spec/specs/tooling-and-validation.md": "tooling-and-validation",
     }
@@ -77,6 +94,7 @@ def test_index_persists_inventory_validation_and_conformance(tmp_path):
         "ai-spec/profiles/initiatives.md",
         "ai-spec/profiles/project.md",
         "ai-spec/profiles/reference.md",
+        "ai-spec/specs/corpus-identity.md",
         "ai-spec/specs/profile-composition.md",
         "ai-spec/specs/tooling-and-validation.md",
         "projects/demo/AI.md",
@@ -90,6 +108,7 @@ def test_index_persists_inventory_validation_and_conformance(tmp_path):
         "ai-spec/profiles/initiatives.md": "v0.18",
         "ai-spec/profiles/project.md": "v0.18",
         "ai-spec/profiles/reference.md": "v0.18",
+        "ai-spec/specs/corpus-identity.md": "v0.18",
         "ai-spec/specs/profile-composition.md": "v0.18",
         "ai-spec/specs/tooling-and-validation.md": "v0.18",
         "projects/demo/AI.md": "v0.16",
@@ -115,10 +134,31 @@ def test_index_persists_inventory_validation_and_conformance(tmp_path):
             order by path
             """
         ).fetchall()
+        identity_rows = connection.execute(
+            """
+            select corpus_uri, owner_id, realm, tier, aliases_json
+            from corpus_identity
+            """
+        ).fetchall()
+        mount_rows = connection.execute(
+            """
+            select
+              mount_uri,
+              corpus_uri,
+              owner_id,
+              realm,
+              tier,
+              node_id,
+              sync_transport,
+              root_path,
+              aliases_json
+            from corpus_mounts
+            """
+        ).fetchall()
 
-    assert source_count == 13
+    assert source_count == 14
     assert issue_count == 0
-    assert marker_count == 9
+    assert marker_count == 10
     assert spec_module_rows == [
         ("ai-spec/AI-SPEC.md", "root-spec", "root", None, "tier-root"),
         (
@@ -138,6 +178,13 @@ def test_index_persists_inventory_validation_and_conformance(tmp_path):
         ("ai-spec/profiles/project.md", "profile", "project", "stable", "tier-root"),
         ("ai-spec/profiles/reference.md", "profile", "reference", "stable", "tier-root"),
         (
+            "ai-spec/specs/corpus-identity.md",
+            "spec",
+            "corpus-identity",
+            "stable",
+            "tier-root",
+        ),
+        (
             "ai-spec/specs/profile-composition.md",
             "spec",
             "profile-composition",
@@ -151,6 +198,31 @@ def test_index_persists_inventory_validation_and_conformance(tmp_path):
             "stable",
             "tier-root",
         ),
+    ]
+    assert identity_rows == [
+        (
+            "corpus://cmikeb/work/brief",
+            "cmikeb",
+            "work",
+            "BRIEF",
+            '["work/brief", "cmikeb/work/brief"]',
+        )
+    ]
+    assert mount_rows == [
+        (
+            "corpus://cmikeb/work/brief@bilby",
+            "corpus://cmikeb/work/brief",
+            "cmikeb",
+            "work",
+            "BRIEF",
+            "bilby",
+            "git",
+            str(root.resolve()),
+            (
+                '["work/brief", "cmikeb/work/brief", '
+                '"work/brief@bilby", "cmikeb/work/brief@bilby"]'
+            ),
+        )
     ]
     assert catalog_status(config).state == "fresh"
 
