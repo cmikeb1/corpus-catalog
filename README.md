@@ -179,6 +179,22 @@ software project rather than the human corpus. Validation warns when a
 known package-local code checkout exists without a recommended
 `.corpusignore` rule.
 
+## Validation Ownership
+
+Validation issue codes name the owning rule layer:
+
+- `core-*` covers corpus root entrypoints, required conformance
+  frontmatter, `.corpusignore` recommendations, and component README
+  metadata.
+- `profile-project-*`, `profile-workspace-*`, and
+  `profile-reference-*` cover project, workspace, and reference profile
+  shape checks.
+- `spec-beta-*` and `profile-beta-*` cover beta stewardship checks in
+  the Spec-owned source checkout.
+
+Root, project, and reference entrypoint checks accept current `AI.md`
+files and future `corpus.md` files during the CORPUS brand cutover.
+
 ## Development
 
 ```bash

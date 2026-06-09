@@ -8,6 +8,8 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 DEFAULT_INCLUDE_PATTERNS = (
     "AI.md",
     "**/AI.md",
+    "corpus.md",
+    "**/corpus.md",
     "**/README.md",
     "**/assets/OVERVIEW.md",
     "**/assets/epics/*/TASKS.md",

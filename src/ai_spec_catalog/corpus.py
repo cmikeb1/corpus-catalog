@@ -174,7 +174,12 @@ def first_non_empty_line(body: str) -> str | None:
 
 
 def source_kind(rel_path: str):
-    if rel_path == "AI.md" or rel_path.endswith("/AI.md"):
+    if (
+        rel_path == "AI.md"
+        or rel_path == "corpus.md"
+        or rel_path.endswith("/AI.md")
+        or rel_path.endswith("/corpus.md")
+    ):
         return "handbook"
     if is_spec_root_path(rel_path):
         return "spec-root"
