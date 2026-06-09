@@ -28,7 +28,7 @@ def test_index_defaults_root_to_current_working_directory(
     manifest = json.loads(output)
     assert manifest["corpus_root"] == str(root.resolve())
     assert manifest["catalog_dir"] == str(root.resolve() / ".corpus")
-    assert manifest["source_count"] == 9
+    assert manifest["source_count"] == 13
 
 
 def test_no_args_defaults_to_status_in_corpus_root(tmp_path, monkeypatch, capsys):

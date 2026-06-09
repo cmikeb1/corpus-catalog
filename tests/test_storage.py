@@ -49,24 +49,36 @@ def test_index_persists_inventory_validation_and_conformance(tmp_path):
 
     manifest = index_catalog(config)
 
-    assert manifest.source_count == 9
+    assert manifest.source_count == 13
     assert manifest.validation_issue_count == 0
     assert manifest.ai_spec_baseline == "v0.18"
     assert {module.path: module.module_type for module in manifest.spec_modules} == {
         "ai-spec/AI-SPEC.md": "root-spec",
+        "ai-spec/profiles/human-workspace.md": "profile",
+        "ai-spec/profiles/initiatives.md": "profile",
         "ai-spec/profiles/project.md": "profile",
+        "ai-spec/profiles/reference.md": "profile",
         "ai-spec/specs/profile-composition.md": "spec",
+        "ai-spec/specs/tooling-and-validation.md": "spec",
     }
     assert {module.path: module.module_id for module in manifest.spec_modules} == {
         "ai-spec/AI-SPEC.md": "root",
+        "ai-spec/profiles/human-workspace.md": "human-workspace",
+        "ai-spec/profiles/initiatives.md": "initiatives",
         "ai-spec/profiles/project.md": "project",
+        "ai-spec/profiles/reference.md": "reference",
         "ai-spec/specs/profile-composition.md": "profile-composition",
+        "ai-spec/specs/tooling-and-validation.md": "tooling-and-validation",
     }
     assert {marker.path for marker in manifest.conformance} == {
         "AI.md",
         "ai-spec/AI-SPEC.md",
+        "ai-spec/profiles/human-workspace.md",
+        "ai-spec/profiles/initiatives.md",
         "ai-spec/profiles/project.md",
+        "ai-spec/profiles/reference.md",
         "ai-spec/specs/profile-composition.md",
+        "ai-spec/specs/tooling-and-validation.md",
         "projects/demo/AI.md",
     }
     assert {
@@ -74,8 +86,12 @@ def test_index_persists_inventory_validation_and_conformance(tmp_path):
     } == {
         "AI.md": "v0.18",
         "ai-spec/AI-SPEC.md": "v0.18",
+        "ai-spec/profiles/human-workspace.md": "v0.18",
+        "ai-spec/profiles/initiatives.md": "v0.18",
         "ai-spec/profiles/project.md": "v0.18",
+        "ai-spec/profiles/reference.md": "v0.18",
         "ai-spec/specs/profile-composition.md": "v0.18",
+        "ai-spec/specs/tooling-and-validation.md": "v0.18",
         "projects/demo/AI.md": "v0.16",
     }
 
@@ -100,16 +116,38 @@ def test_index_persists_inventory_validation_and_conformance(tmp_path):
             """
         ).fetchall()
 
-    assert source_count == 9
+    assert source_count == 13
     assert issue_count == 0
-    assert marker_count == 5
+    assert marker_count == 9
     assert spec_module_rows == [
         ("ai-spec/AI-SPEC.md", "root-spec", "root", None, "tier-root"),
+        (
+            "ai-spec/profiles/human-workspace.md",
+            "profile",
+            "human-workspace",
+            "stable",
+            "tier-root",
+        ),
+        (
+            "ai-spec/profiles/initiatives.md",
+            "profile",
+            "initiatives",
+            "beta",
+            "tier-root",
+        ),
         ("ai-spec/profiles/project.md", "profile", "project", "stable", "tier-root"),
+        ("ai-spec/profiles/reference.md", "profile", "reference", "stable", "tier-root"),
         (
             "ai-spec/specs/profile-composition.md",
             "spec",
             "profile-composition",
+            "stable",
+            "tier-root",
+        ),
+        (
+            "ai-spec/specs/tooling-and-validation.md",
+            "spec",
+            "tooling-and-validation",
             "stable",
             "tier-root",
         ),

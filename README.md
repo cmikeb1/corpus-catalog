@@ -52,6 +52,9 @@ The initial deterministic surface is:
   registries, overviews, and task files;
 - honor root `.corpusignore` rules before include pattern checks;
 - index active epic `SPIKE.md` files and reference Markdown by default;
+- model AI-SPEC root, spec, and profile modules as first-class sources;
+- route context packets through owning profile/spec modules before
+  lexical search;
 - search corpus items lexically;
 - assemble a source-cited context packet for a goal and cwd;
 - run cheap validation checks, starting with root handbook presence and

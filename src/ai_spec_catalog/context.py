@@ -70,6 +70,9 @@ def select_context_items(
         if spike_path:
             add(spike_path)
 
+    for routed_path in routed_profile_and_spec_paths(goal, cwd_path, items):
+        add(routed_path)
+
     if any(
         term in goal.casefold()
         for term in ("integration", "adapter", "deployment", "persona", "registry")
@@ -84,6 +87,133 @@ def select_context_items(
             break
 
     return selected[: config.max_context_items]
+
+
+def routed_profile_and_spec_paths(
+    goal: str,
+    cwd_path: Path | None,
+    items: list[CorpusItem],
+) -> list[str]:
+    paths: list[str] = []
+
+    def add_module(module_type: str, module_id: str) -> None:
+        item = best_module_item(items, module_type, module_id)
+        if item and item.source.path not in paths:
+            paths.append(item.source.path)
+
+    for profile_id in profile_ids_for_cwd(cwd_path):
+        add_module("profile", profile_id)
+
+    routing_text = routing_haystack(goal, cwd_path)
+    if any(term in routing_text for term in TOOLING_SPEC_TERMS):
+        add_module("spec", "tooling-and-validation")
+
+    if any(term in routing_text for term in PROFILE_COMPOSITION_TERMS):
+        add_module("spec", "profile-composition")
+
+    return paths
+
+
+TOOLING_SPEC_TERMS = (
+    "catalog",
+    "generated state",
+    "generated-state",
+    "index",
+    "indexing",
+    "source sync",
+    "source-sync",
+    "source synchronization",
+    "source-synchronization",
+    "validate",
+    "validation",
+)
+
+PROFILE_COMPOSITION_TERMS = (
+    "active profile",
+    "active profiles",
+    "beta",
+    "betas",
+    "module",
+    "modules",
+    "package",
+    "packaging",
+    "profile",
+    "profiles",
+)
+
+
+def profile_ids_for_cwd(cwd_path: Path | None) -> tuple[str, ...]:
+    if cwd_path is None:
+        return ()
+
+    rel = cwd_path.as_posix()
+    if rel == "reference/initiatives" or rel.startswith("reference/initiatives/"):
+        return ("reference", "initiatives")
+    if rel == "reference" or rel.startswith("reference/"):
+        return ("reference",)
+    if rel == "workspace" or rel.startswith("workspace/"):
+        return ("human-workspace",)
+    if rel == "projects" or rel.startswith("projects/"):
+        return ("project",)
+    return ()
+
+
+def routing_haystack(goal: str, cwd_path: Path | None) -> str:
+    parts = [goal]
+    if cwd_path is not None:
+        parts.append(cwd_path.as_posix())
+    return " ".join(parts).replace("_", "-").casefold()
+
+
+def best_module_item(
+    items: list[CorpusItem],
+    module_type: str,
+    module_id: str,
+) -> CorpusItem | None:
+    matches = [
+        item
+        for item in items
+        if item.source.kind in ("profile-module", "spec-module")
+        and module_type_for_item(item) == module_type
+        and module_id_for_item(item) == module_id
+    ]
+    if not matches:
+        return None
+
+    return min(matches, key=module_preference_rank)
+
+
+def module_type_for_item(item: CorpusItem) -> str | None:
+    if item.source.kind == "profile-module":
+        return "profile"
+    if item.source.kind == "spec-module":
+        return "spec"
+    return None
+
+
+def module_id_for_item(item: CorpusItem) -> str:
+    if item.source.kind == "profile-module":
+        value = item.front_matter.get("ai_spec_profile_id")
+    else:
+        value = item.front_matter.get("ai_spec_spec_id")
+
+    if value:
+        return str(value)
+    return Path(item.source.path).stem
+
+
+def module_preference_rank(item: CorpusItem) -> tuple[int, str]:
+    path = item.source.path
+    preferred_prefixes = (
+        "projects/spec/code/corpus-spec/",
+        "projects/spec/code/ai-spec/",
+        "corpus-spec/",
+        "ai-spec/",
+    )
+    for index, prefix in enumerate(preferred_prefixes):
+        if path.startswith(prefix):
+            return (index, path)
+    return (len(preferred_prefixes), path)
 
 
 def to_context_item(item: CorpusItem, config: CatalogConfig) -> ContextItem:
