@@ -6,8 +6,8 @@ from fnmatch import fnmatch
 from pathlib import Path
 from typing import Any
 
-from ai_spec_catalog.config import CatalogConfig
-from ai_spec_catalog.models import CorpusItem, SourceRef
+from corpus_catalog.config import CatalogConfig
+from corpus_catalog.models import CorpusItem, SourceRef
 
 
 def load_corpus(config: CatalogConfig) -> list[CorpusItem]:

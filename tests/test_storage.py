@@ -2,11 +2,11 @@ import sqlite3
 from pathlib import Path
 from shutil import copytree
 
-from ai_spec_catalog.config import CatalogConfig
-from ai_spec_catalog.context import build_context_packet
-from ai_spec_catalog.corpus import load_corpus
-from ai_spec_catalog.projects import build_project_creation_plan
-from ai_spec_catalog.storage import (
+from corpus_catalog.config import CatalogConfig
+from corpus_catalog.context import build_context_packet
+from corpus_catalog.corpus import load_corpus
+from corpus_catalog.projects import build_project_creation_plan
+from corpus_catalog.storage import (
     catalog_status,
     index_catalog,
     init_catalog,
@@ -254,14 +254,14 @@ def test_corpusignore_excludes_package_local_code_markdown(tmp_path):
     code_readme.parent.mkdir(parents=True)
     code_readme.write_text("# Package README\n", encoding="utf-8")
     (root / ".corpusignore").write_text(
-        "projects/spec/code/catalog/\n",
+        "projects/spec/code/corpus-catalog/\n",
         encoding="utf-8",
     )
     config = CatalogConfig(corpus_root=root)
 
     paths = {item.source.path for item in load_corpus(config)}
 
-    assert "projects/spec/code/catalog/README.md" not in paths
+    assert "projects/spec/code/corpus-catalog/README.md" not in paths
 
 
 def test_corpusignore_excludes_single_file_pattern(tmp_path):

@@ -2,13 +2,13 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from ai_spec_catalog.config import CatalogConfig
-from ai_spec_catalog.context import build_context_packet
-from ai_spec_catalog.corpus import search_corpus
-from ai_spec_catalog.identity import extract_current_mount, resolve_current_mount_selector
-from ai_spec_catalog.models import ContextPacket, CorpusItem, ValidationIssue
-from ai_spec_catalog.storage import index_catalog, load_index_or_corpus
-from ai_spec_catalog.validators import validate_corpus
+from corpus_catalog.config import CatalogConfig
+from corpus_catalog.context import build_context_packet
+from corpus_catalog.corpus import search_corpus
+from corpus_catalog.identity import extract_current_mount, resolve_current_mount_selector
+from corpus_catalog.models import ContextPacket, CorpusItem, ValidationIssue
+from corpus_catalog.storage import index_catalog, load_index_or_corpus
+from corpus_catalog.validators import validate_corpus
 
 
 def get_context_packet(

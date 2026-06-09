@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from ai_spec_catalog.config import CatalogConfig
-from ai_spec_catalog.context import build_context_packet
+from corpus_catalog.config import CatalogConfig
+from corpus_catalog.context import build_context_packet
 
 
 FIXTURE_ROOT = Path(__file__).parent / "fixtures" / "mini_brief"
@@ -75,7 +75,7 @@ def test_context_routes_reference_and_initiatives_profiles_by_cwd():
 def test_context_routes_catalog_tasks_to_project_and_tooling_docs():
     paths = context_paths(
         goal="Implement Catalog indexing validation generated-state behavior",
-        cwd="projects/spec/code/catalog",
+        cwd="projects/spec/code/corpus-catalog",
     )
 
     assert "corpus-spec/profiles/project.md" in paths
@@ -85,7 +85,7 @@ def test_context_routes_catalog_tasks_to_project_and_tooling_docs():
 def test_context_routes_corpus_identity_goals_to_identity_spec():
     paths = context_paths(
         goal="Implement corpus identity, realm, and mount URI behavior",
-        cwd="projects/spec/code/catalog",
+        cwd="projects/spec/code/corpus-catalog",
     )
 
     assert "corpus-spec/specs/corpus-identity.md" in paths

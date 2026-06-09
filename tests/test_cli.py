@@ -5,7 +5,7 @@ from shutil import copytree
 
 import pytest
 
-from ai_spec_catalog.cli import main
+from corpus_catalog.cli import main
 
 
 FIXTURE_ROOT = Path(__file__).parent / "fixtures" / "mini_brief"

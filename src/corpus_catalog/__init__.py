@@ -1,9 +1,9 @@
 """AI-SPEC Catalog CLI and library surface."""
 
-from ai_spec_catalog.config import CatalogConfig
-from ai_spec_catalog.context import build_context_packet
-from ai_spec_catalog.corpus import load_corpus, search_corpus
-from ai_spec_catalog.models import (
+from corpus_catalog.config import CatalogConfig
+from corpus_catalog.context import build_context_packet
+from corpus_catalog.corpus import load_corpus, search_corpus
+from corpus_catalog.models import (
     CatalogQuery,
     CorpusIdentity,
     ContextItem,

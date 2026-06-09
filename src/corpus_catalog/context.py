@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from ai_spec_catalog.config import CatalogConfig
-from ai_spec_catalog.corpus import search_corpus, source_fingerprint
-from ai_spec_catalog.models import CatalogQuery, ContextItem, ContextPacket, CorpusItem
-from ai_spec_catalog.storage import load_index_or_corpus, read_manifest
-from ai_spec_catalog.validators import corpus_baseline, validate_corpus
+from corpus_catalog.config import CatalogConfig
+from corpus_catalog.corpus import search_corpus, source_fingerprint
+from corpus_catalog.models import CatalogQuery, ContextItem, ContextPacket, CorpusItem
+from corpus_catalog.storage import load_index_or_corpus, read_manifest
+from corpus_catalog.validators import corpus_baseline, validate_corpus
 
 
 def build_context_packet(

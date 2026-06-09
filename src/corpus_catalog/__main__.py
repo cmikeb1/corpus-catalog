@@ -1,4 +1,4 @@
-from ai_spec_catalog.cli import main
+from corpus_catalog.cli import main
 
 
 if __name__ == "__main__":

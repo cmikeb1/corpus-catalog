@@ -7,15 +7,15 @@ from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 from typing import Any
 
-from ai_spec_catalog.config import CatalogConfig
-from ai_spec_catalog.corpus import load_corpus, source_fingerprint
-from ai_spec_catalog.identity import (
+from corpus_catalog.config import CatalogConfig
+from corpus_catalog.corpus import load_corpus, source_fingerprint
+from corpus_catalog.identity import (
     CorpusIdentityError,
     current_identity,
     extract_current_mount,
     mount_sync_status,
 )
-from ai_spec_catalog.models import (
+from corpus_catalog.models import (
     CatalogArtifact,
     CatalogManifest,
     CatalogStatus,
@@ -26,7 +26,7 @@ from ai_spec_catalog.models import (
     SpecModule,
     ValidationIssue,
 )
-from ai_spec_catalog.validators import validate_corpus
+from corpus_catalog.validators import validate_corpus
 
 
 CATALOG_SCHEMA_VERSION = 1
@@ -797,7 +797,7 @@ def current_artifacts(config: CatalogConfig) -> list[CatalogArtifact]:
 
 def catalog_version() -> str:
     try:
-        return version("ai-spec-catalog")
+        return version("corpus-catalog")
     except PackageNotFoundError:
         return "0.1.0"
 

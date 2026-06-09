@@ -3,14 +3,14 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from ai_spec_catalog.config import (
+from corpus_catalog.config import (
     CORPUS_IGNORE_FILENAME,
     RECOMMENDED_CORPUSIGNORE_PATTERNS,
     CatalogConfig,
 )
-from ai_spec_catalog.corpus import ignore_pattern_matches, load_corpus_ignore_patterns
-from ai_spec_catalog.identity import CorpusIdentityError, extract_current_mount
-from ai_spec_catalog.models import CorpusItem, SourceRef, ValidationIssue
+from corpus_catalog.corpus import ignore_pattern_matches, load_corpus_ignore_patterns
+from corpus_catalog.identity import CorpusIdentityError, extract_current_mount
+from corpus_catalog.models import CorpusItem, SourceRef, ValidationIssue
 
 
 AI_REQUIRED_FRONTMATTER = (

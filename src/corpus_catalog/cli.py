@@ -5,25 +5,25 @@ import json
 from pathlib import Path
 import sys
 
-from ai_spec_catalog.config import CatalogConfig
-from ai_spec_catalog.context import build_context_packet
-from ai_spec_catalog.corpus import load_corpus, search_corpus
-from ai_spec_catalog.identity import (
+from corpus_catalog.config import CatalogConfig
+from corpus_catalog.context import build_context_packet
+from corpus_catalog.corpus import load_corpus, search_corpus
+from corpus_catalog.identity import (
     CorpusIdentityError,
     build_mount_inventory,
     extract_current_mount,
     resolve_current_mount_selector,
 )
-from ai_spec_catalog.models import CatalogStatus, MountInventory
-from ai_spec_catalog.projects import build_project_creation_plan
-from ai_spec_catalog.storage import (
+from corpus_catalog.models import CatalogStatus, MountInventory
+from corpus_catalog.projects import build_project_creation_plan
+from corpus_catalog.storage import (
     catalog_status,
     gitignore_warning,
     index_catalog,
     init_catalog,
     load_index_or_corpus,
 )
-from ai_spec_catalog.validators import validate_corpus
+from corpus_catalog.validators import validate_corpus
 
 
 def main() -> None:

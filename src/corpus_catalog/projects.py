@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import re
 
-from ai_spec_catalog.config import CatalogConfig
-from ai_spec_catalog.models import ProjectCreationPlan, ProjectPlanFile, SourceRef
-from ai_spec_catalog.storage import catalog_status, load_index_or_corpus, read_manifest
-from ai_spec_catalog.validators import corpus_baseline
+from corpus_catalog.config import CatalogConfig
+from corpus_catalog.models import ProjectCreationPlan, ProjectPlanFile, SourceRef
+from corpus_catalog.storage import catalog_status, load_index_or_corpus, read_manifest
+from corpus_catalog.validators import corpus_baseline
 
 
 def build_project_creation_plan(

@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from ai_spec_catalog.corpus import load_corpus
-from ai_spec_catalog.config import CatalogConfig
-from ai_spec_catalog.models import CorpusItem, SourceKind, SourceRef
-from ai_spec_catalog.validators import validate_corpus
+from corpus_catalog.corpus import load_corpus
+from corpus_catalog.config import CatalogConfig
+from corpus_catalog.models import CorpusItem, SourceKind, SourceRef
+from corpus_catalog.validators import validate_corpus
 
 
 def issue_codes(items, config: CatalogConfig) -> set[str]:
@@ -98,7 +98,9 @@ def test_project_corpus_entry_requires_overview(tmp_path):
 
 
 def test_missing_corpusignore_warns_when_recommended_code_path_exists(tmp_path):
-    code_readme = tmp_path / "projects" / "spec" / "code" / "catalog" / "README.md"
+    code_readme = (
+        tmp_path / "projects" / "spec" / "code" / "corpus-catalog" / "README.md"
+    )
     code_readme.parent.mkdir(parents=True)
     code_readme.write_text("# Package README\n", encoding="utf-8")
     config = CatalogConfig(corpus_root=tmp_path)
@@ -109,7 +111,9 @@ def test_missing_corpusignore_warns_when_recommended_code_path_exists(tmp_path):
 
 
 def test_corpusignore_warns_when_recommended_code_path_not_covered(tmp_path):
-    code_readme = tmp_path / "projects" / "spec" / "code" / "catalog" / "README.md"
+    code_readme = (
+        tmp_path / "projects" / "spec" / "code" / "corpus-catalog" / "README.md"
+    )
     code_readme.parent.mkdir(parents=True)
     code_readme.write_text("# Package README\n", encoding="utf-8")
     (tmp_path / ".corpusignore").write_text("# not enough yet\n", encoding="utf-8")
@@ -128,7 +132,7 @@ def test_corpusignore_recommended_rule_silences_code_path_warning(tmp_path):
     code_readme.parent.mkdir(parents=True)
     code_readme.write_text("# Package README\n", encoding="utf-8")
     (tmp_path / ".corpusignore").write_text(
-        "projects/spec/code/catalog/\n",
+        "projects/spec/code/corpus-catalog/\n",
         encoding="utf-8",
     )
     config = CatalogConfig(corpus_root=tmp_path)

@@ -103,7 +103,7 @@ catalog context \
 Equivalent module invocation:
 
 ```bash
-python -m ai_spec_catalog.cli context \
+python -m corpus_catalog.cli context \
   --root ../../.. \
   --cwd projects/spec \
   --goal "Create a new project according to the local AI-SPEC baseline"

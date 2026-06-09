@@ -8,8 +8,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from ai_spec_catalog.config import CatalogConfig
-from ai_spec_catalog.models import (
+from corpus_catalog.config import CatalogConfig
+from corpus_catalog.models import (
     CorpusIdentity,
     CorpusItem,
     CorpusMount,

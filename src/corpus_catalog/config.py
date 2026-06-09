@@ -56,7 +56,6 @@ DEFAULT_EXCLUDE_PARTS = (
 CORPUS_IGNORE_FILENAME = ".corpusignore"
 
 RECOMMENDED_CORPUSIGNORE_PATTERNS = (
-    "projects/spec/code/catalog/",
     "projects/spec/code/corpus-catalog/",
 )
 

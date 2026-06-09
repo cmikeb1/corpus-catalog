@@ -3,9 +3,9 @@ from shutil import copytree
 
 import pytest
 
-from ai_spec_catalog.config import CatalogConfig
-from ai_spec_catalog.corpus import load_corpus
-from ai_spec_catalog.identity import (
+from corpus_catalog.config import CatalogConfig
+from corpus_catalog.corpus import load_corpus
+from corpus_catalog.identity import (
     CorpusIdentityError,
     build_mount_inventory,
     extract_current_mount,

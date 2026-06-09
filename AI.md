@@ -61,7 +61,7 @@ Catalog does not own:
 - `catalog validate`
 - `catalog project new`
 
-The Python module path is `ai_spec_catalog`.
+The Python module path is `corpus_catalog`.
 
 ## Verification
 
