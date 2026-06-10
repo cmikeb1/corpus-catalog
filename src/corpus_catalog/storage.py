@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 import sqlite3
 from datetime import datetime, timezone
-from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 from typing import Any
 
@@ -26,6 +25,7 @@ from corpus_catalog.models import (
     SpecModule,
     ValidationIssue,
 )
+from corpus_catalog.release import catalog_version, VALIDATED_CORPUS_SPEC_VERSION
 from corpus_catalog.validators import validate_corpus
 
 
@@ -50,6 +50,7 @@ def init_catalog(config: CatalogConfig) -> CatalogManifest:
     manifest = CatalogManifest(
         schema_version=CATALOG_SCHEMA_VERSION,
         catalog_version=catalog_version(),
+        validated_corpus_spec_version=VALIDATED_CORPUS_SPEC_VERSION,
         corpus_root=str(config.corpus_root),
         catalog_dir=str(config.catalog_dir),
         generated_at=utc_now(),
@@ -103,6 +104,7 @@ def index_catalog(config: CatalogConfig) -> CatalogManifest:
     manifest = CatalogManifest(
         schema_version=CATALOG_SCHEMA_VERSION,
         catalog_version=catalog_version(),
+        validated_corpus_spec_version=VALIDATED_CORPUS_SPEC_VERSION,
         corpus_root=str(config.corpus_root),
         catalog_dir=str(config.catalog_dir),
         generated_at=indexed_at,
@@ -662,6 +664,9 @@ def write_catalog_ai(config: CatalogConfig, manifest: CatalogManifest) -> None:
         "## Freshness",
         "",
         f"- Generated: `{manifest.generated_at or 'not indexed'}`",
+        f"- Catalog version: `{manifest.catalog_version}`",
+        "- Validated corpus-spec: "
+        f"`{manifest.validated_corpus_spec_version or 'unknown'}`",
         f"- AI-SPEC baseline: `{manifest.ai_spec_baseline or 'unknown'}`",
         f"- Source count: `{manifest.source_count}`",
         f"- Spec/profile modules: `{len(manifest.spec_modules)}`",
@@ -793,13 +798,6 @@ def current_artifacts(config: CatalogConfig) -> list[CatalogArtifact]:
             )
         )
     return artifacts
-
-
-def catalog_version() -> str:
-    try:
-        return version("corpus-catalog")
-    except PackageNotFoundError:
-        return "0.1.0"
 
 
 def gitignore_warning(config: CatalogConfig) -> str | None:

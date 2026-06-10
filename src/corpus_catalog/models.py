@@ -214,6 +214,7 @@ class CatalogManifest(BaseModel):
 
     schema_version: int = 1
     catalog_version: str
+    validated_corpus_spec_version: str | None = None
     corpus_root: str
     catalog_dir: str
     generated_at: str | None = None

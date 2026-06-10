@@ -16,6 +16,11 @@ from corpus_catalog.models import (
     SourceRef,
     ValidationIssue,
 )
+from corpus_catalog.release import (
+    VALIDATED_CORPUS_SPEC_VERSION,
+    catalog_version,
+    release_metadata,
+)
 
 __all__ = [
     "CatalogConfig",
@@ -30,7 +35,10 @@ __all__ = [
     "MountSyncStatus",
     "SourceRef",
     "ValidationIssue",
+    "VALIDATED_CORPUS_SPEC_VERSION",
     "build_context_packet",
+    "catalog_version",
     "load_corpus",
+    "release_metadata",
     "search_corpus",
 ]

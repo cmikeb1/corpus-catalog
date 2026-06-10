@@ -21,6 +21,9 @@ dev = [
 [project.scripts]
 catalog = "corpus_catalog.cli:main"
 
+[tool.corpus-catalog.release]
+validated-corpus-spec = "v0.19"
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/corpus_catalog"]
 

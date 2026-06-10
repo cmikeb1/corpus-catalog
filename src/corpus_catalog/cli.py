@@ -16,6 +16,7 @@ from corpus_catalog.identity import (
 )
 from corpus_catalog.models import CatalogStatus, MountInventory
 from corpus_catalog.projects import build_project_creation_plan
+from corpus_catalog.release import release_metadata
 from corpus_catalog.storage import (
     catalog_status,
     gitignore_warning,
@@ -78,6 +79,9 @@ def main() -> None:
     project_new_parser.add_argument("--tier")
     project_new_parser.add_argument("--lifecycle", default="DRAFT")
 
+    version_parser = subparsers.add_parser("version")
+    version_parser.add_argument("--format", choices=("text", "json"), default="text")
+
     argv = sys.argv[1:]
     if not argv:
         if looks_like_corpus_root(Path.cwd()):
@@ -87,6 +91,18 @@ def main() -> None:
             return
 
     args = parser.parse_args(argv)
+    if args.command == "version":
+        metadata = release_metadata()
+        if args.format == "json":
+            print(json.dumps(metadata, indent=2))
+        else:
+            print(f"Catalog version: {metadata['catalog_version']}")
+            print(
+                "Validated corpus-spec: "
+                f"{metadata['validated_corpus_spec_version']}"
+            )
+        return
+
     config = CatalogConfig(corpus_root=Path(args.root))
 
     if args.command == "init":
@@ -251,6 +267,12 @@ def format_status(status: CatalogStatus) -> str:
     ]
     if status.manifest and status.manifest.generated_at:
         lines.append(f"Generated: {status.manifest.generated_at}")
+    if status.manifest:
+        lines.append(f"Catalog version: {status.manifest.catalog_version}")
+        lines.append(
+            "Validated corpus-spec: "
+            f"{status.manifest.validated_corpus_spec_version or 'unknown'}"
+        )
     if status.manifest and status.manifest.ai_spec_baseline:
         lines.append(f"AI-SPEC baseline: {status.manifest.ai_spec_baseline}")
     if status.current_mount:

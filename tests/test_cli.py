@@ -69,6 +69,18 @@ def test_no_args_ignores_legacy_catalog_directory(tmp_path, monkeypatch, capsys)
     assert "Catalog state:" not in output
 
 
+def test_version_cli_reports_release_metadata(monkeypatch, capsys):
+    monkeypatch.setattr(sys, "argv", ["catalog", "version", "--format", "json"])
+
+    main()
+
+    output = json.loads(capsys.readouterr().out)
+    assert output == {
+        "catalog_version": "0.1.0",
+        "validated_corpus_spec_version": "v0.19",
+    }
+
+
 def test_search_cli_emits_compact_results(tmp_path, monkeypatch, capsys):
     root = copy_fixture(tmp_path)
     monkeypatch.chdir(root)

@@ -128,6 +128,16 @@ catalog validate --root ../../.. --format json
 catalog validate --corpus corpus://cmikeb/work/brief --format json
 ```
 
+Release metadata:
+
+```bash
+catalog version
+catalog version --format json
+```
+
+The version command reports both the Catalog package version and the
+`corpus-spec` release this package was validated against.
+
 Mount inventory:
 
 ```bash
@@ -226,3 +236,51 @@ pytest
 
 The package currently depends on Pydantic for boundary models and uses
 the Python standard library for discovery, parsing, search, and CLI.
+
+## Release And Deployment
+
+Catalog is a Python package. A Catalog release has two version axes:
+
+- `[project].version` in `pyproject.toml` is the Catalog package
+  version and becomes the Git tag name, such as `v0.1.0`.
+- `[tool.corpus-catalog.release].validated-corpus-spec` in
+  `pyproject.toml` is the `corpus-spec` release used to validate this
+  Catalog release, such as `v0.19`.
+
+The runtime mirror in `corpus_catalog.release` is included in the
+installed wheel so `catalog version` and generated `.corpus/` manifests
+can report the validated `corpus-spec` release. Tests enforce that the
+runtime mirror matches `pyproject.toml`.
+
+Release checklist:
+
+```bash
+uv sync --reinstall --extra dev
+uv run pytest
+uv run ruff check .
+uv build
+git status --short --branch
+git tag -a v0.1.0 -m "corpus-catalog v0.1.0"
+git push origin main
+git push origin v0.1.0
+```
+
+`uv build` creates the deployable artifacts under `dist/`:
+
+- a wheel, installed by package tools for normal use;
+- a source distribution, useful for source-based rebuilds and audit.
+
+For local CLI deployment, prefer an isolated tool install rather than
+writing into the system Python:
+
+```bash
+uv tool install --force dist/corpus_catalog-0.1.0-py3-none-any.whl
+catalog version
+```
+
+For project-local development, keep using the editable environment:
+
+```bash
+uv sync --extra dev
+uv run catalog version
+```
