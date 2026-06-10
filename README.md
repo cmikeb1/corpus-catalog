@@ -274,13 +274,17 @@ For local CLI deployment, prefer an isolated tool install rather than
 writing into the system Python:
 
 ```bash
-uv tool install --force dist/corpus_catalog-0.1.0-py3-none-any.whl
+scripts/install-catalog-release
 catalog version
 ```
 
-For project-local development, keep using the editable environment:
+For source snapshots, install a side-by-side wrapper:
 
 ```bash
-uv sync --extra dev
-uv run catalog version
+scripts/install-catalog-dev
+catalog-dev version
 ```
+
+`catalog` is the stable released tool. `catalog-dev` runs this source
+checkout through `uv run --project`, so pulling new commits into this
+repo updates the snapshot command without reinstalling it.

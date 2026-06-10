@@ -1,0 +1,97 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+  cat <<'USAGE'
+Usage: scripts/install-catalog-release [--wheel PATH] [--no-build] [--update-shell]
+
+Install the latest built corpus-catalog wheel as the stable `catalog`
+command using uv's isolated tool environment.
+
+Options:
+  --wheel PATH     Install a specific wheel file.
+  --no-build       Fail if no wheel is already present under dist/.
+  --update-shell   Run `uv tool update-shell` after install.
+  -h, --help       Show this help.
+USAGE
+}
+
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+repo_root="$(cd "$script_dir/.." && pwd)"
+wheel_path=""
+build_if_missing=1
+update_shell=0
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --wheel)
+      [[ $# -ge 2 ]] || { echo "error: --wheel requires a path" >&2; exit 2; }
+      wheel_path="$2"
+      shift 2
+      ;;
+    --no-build)
+      build_if_missing=0
+      shift
+      ;;
+    --update-shell)
+      update_shell=1
+      shift
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    *)
+      echo "error: unknown argument: $1" >&2
+      usage >&2
+      exit 2
+      ;;
+  esac
+done
+
+latest_wheel() {
+  find "$repo_root/dist" -maxdepth 1 -type f -name 'corpus_catalog-*.whl' \
+    -exec ls -t {} + 2>/dev/null | head -n 1
+}
+
+if [[ -z "$wheel_path" ]]; then
+  wheel_path="$(latest_wheel || true)"
+fi
+
+if [[ -z "$wheel_path" ]]; then
+  if [[ "$build_if_missing" -eq 0 ]]; then
+    echo "error: no corpus_catalog wheel found under $repo_root/dist" >&2
+    echo "hint: run 'uv build' or omit --no-build." >&2
+    exit 1
+  fi
+  (cd "$repo_root" && uv build)
+  wheel_path="$(latest_wheel || true)"
+fi
+
+if [[ -z "$wheel_path" || ! -f "$wheel_path" ]]; then
+  echo "error: wheel not found: ${wheel_path:-<none>}" >&2
+  exit 1
+fi
+
+uv tool install --force "$wheel_path"
+
+if [[ "$update_shell" -eq 1 ]]; then
+  uv tool update-shell
+fi
+
+tool_bin="$(uv tool dir --bin)"
+
+cat <<EOF
+
+Installed stable Catalog from:
+  $wheel_path
+
+Command:
+  catalog version
+
+If this shell cannot find 'catalog', run:
+  export PATH="$tool_bin:\$PATH"
+
+To make that permanent, run:
+  uv tool update-shell
+EOF

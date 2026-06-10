@@ -4,7 +4,8 @@ Release history for the `corpus-catalog` Python package and CLI.
 
 ## Unreleased
 
-*(none)*
+- Added install scripts for stable `catalog` and source-backed
+  `catalog-dev` commands.
 
 ## v0.1.0 - 2026-06-09
 

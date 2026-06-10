@@ -1,0 +1,74 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+  cat <<'USAGE'
+Usage: scripts/install-catalog-dev [--name COMMAND]
+
+Install a snapshot command, default `catalog-dev`, that runs this source
+checkout through `uv run --project`.
+
+The wrapper stays pointed at this checkout. After a git pull, the next
+`catalog-dev` invocation uses the updated source.
+
+Options:
+  --name COMMAND   Wrapper command name. Default: catalog-dev.
+  -h, --help       Show this help.
+USAGE
+}
+
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+repo_root="$(cd "$script_dir/.." && pwd)"
+command_name="catalog-dev"
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --name)
+      [[ $# -ge 2 ]] || { echo "error: --name requires a command" >&2; exit 2; }
+      command_name="$2"
+      shift 2
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    *)
+      echo "error: unknown argument: $1" >&2
+      usage >&2
+      exit 2
+      ;;
+  esac
+done
+
+if [[ "$command_name" == */* || -z "$command_name" ]]; then
+  echo "error: --name must be a command name, not a path" >&2
+  exit 2
+fi
+
+tool_bin="$(uv tool dir --bin)"
+mkdir -p "$tool_bin"
+wrapper="$tool_bin/$command_name"
+
+cat > "$wrapper" <<EOF
+#!/usr/bin/env bash
+set -euo pipefail
+repo_root="$repo_root"
+exec uv run --project "\$repo_root" catalog "\$@"
+EOF
+
+chmod +x "$wrapper"
+
+cat <<EOF
+
+Installed snapshot Catalog wrapper:
+  $wrapper
+
+Command:
+  $command_name version
+
+If this shell cannot find '$command_name', run:
+  export PATH="$tool_bin:\$PATH"
+
+To make that permanent, run:
+  uv tool update-shell
+EOF

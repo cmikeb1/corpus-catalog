@@ -93,9 +93,9 @@ Release process:
    distribution under `dist/`.
 7. Commit release-prep changes, tag the package as `v<project.version>`,
    and push the branch and tag.
-8. For local CLI deployment, install the wheel into an isolated tool
-   environment with `uv tool install --force dist/<wheel>.whl`. Avoid
-   installing into the system Python.
+8. For local CLI deployment, use `scripts/install-catalog-release` for
+   stable `catalog` and `scripts/install-catalog-dev` for source-backed
+   `catalog-dev`. Avoid installing into the system Python.
 
 ## Verification
 
@@ -105,5 +105,7 @@ uv run pytest
 uv run ruff check .
 uv build
 uv run catalog version
+scripts/install-catalog-release --no-build
+scripts/install-catalog-dev
 uv run catalog context --root /Users/cmikeb/work/brief --cwd projects/spec --goal "Create a new project according to the local AI-SPEC baseline"
 ```
