@@ -269,6 +269,8 @@ class CatalogStatus(BaseModel):
     stale_reasons: list[str] = Field(default_factory=list)
     next_commands: list[str] = Field(default_factory=list)
     current_mount: CorpusMount | None = None
+    mount_registry_path: str | None = None
+    mount_registered: bool | None = None
     mount_sync_status: MountSyncStatus | None = None
     manifest: CatalogManifest | None = None
 

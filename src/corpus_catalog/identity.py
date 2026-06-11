@@ -175,6 +175,48 @@ def read_known_mounts(registry_path: Path) -> list[KnownCorpusMount]:
     ]
 
 
+def known_mount_for_current_root(
+    mount: CorpusMount | None,
+    registry_path: Path | None = None,
+) -> KnownCorpusMount | None:
+    """Return the registered mount matching the current mount URI and root path."""
+
+    if mount is None:
+        return None
+    registry_path = registry_path or user_registry_path()
+    for known_mount in read_known_mounts(registry_path):
+        if known_mount.mount_uri == mount.mount_uri and same_root_path(
+            known_mount.root_path,
+            mount.root_path,
+        ):
+            return known_mount
+    return None
+
+
+def mount_is_registered(
+    mount: CorpusMount | None,
+    registry_path: Path | None = None,
+) -> bool:
+    return known_mount_for_current_root(mount, registry_path) is not None
+
+
+def mount_registration_warning(
+    config: CatalogConfig, mount: CorpusMount | None
+) -> str | None:
+    if mount is None or mount_is_registered(mount):
+        return None
+    return (
+        f"Current mount {mount.mount_uri} is not registered at "
+        f"{user_registry_path()}; run catalog mounts --root {config.corpus_root}."
+    )
+
+
+def same_root_path(left: str, right: str) -> bool:
+    return str(Path(left).expanduser().resolve()) == str(
+        Path(right).expanduser().resolve()
+    )
+
+
 def register_mount(
     registry_path: Path,
     mounts: list[KnownCorpusMount],

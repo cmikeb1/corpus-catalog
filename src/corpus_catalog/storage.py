@@ -12,7 +12,9 @@ from corpus_catalog.identity import (
     CorpusIdentityError,
     current_identity,
     extract_current_mount,
+    mount_is_registered,
     mount_sync_status,
+    user_registry_path,
 )
 from corpus_catalog.models import (
     CatalogArtifact,
@@ -136,6 +138,7 @@ def index_catalog(config: CatalogConfig) -> CatalogManifest:
 def catalog_status(config: CatalogConfig) -> CatalogStatus:
     manifest = read_manifest(config)
     manifest_exists = manifest is not None
+    current_mount = manifest.current_mount if manifest else None
     missing_artifacts = [
         rel_path
         for rel_path, _kind in REQUIRED_ARTIFACTS
@@ -150,6 +153,9 @@ def catalog_status(config: CatalogConfig) -> CatalogStatus:
                 "Legacy .catalog generated state exists but is no longer read; "
                 "run catalog index and delete .catalog after validation."
             )
+        current_mount = current_mount or current_mount_from_source(config)
+        next_commands = [f"catalog init --root {config.corpus_root}"]
+        next_commands.extend(mount_registration_commands(config, current_mount))
         return CatalogStatus(
             state="missing",
             corpus_root=str(config.corpus_root),
@@ -157,12 +163,14 @@ def catalog_status(config: CatalogConfig) -> CatalogStatus:
             manifest_exists=manifest_exists,
             missing_artifacts=missing_artifacts,
             stale_reasons=stale_reasons,
-            next_commands=[f"catalog init --root {config.corpus_root}"],
-            current_mount=manifest.current_mount if manifest else None,
+            next_commands=next_commands,
+            current_mount=current_mount,
+            mount_registry_path=str(user_registry_path()) if current_mount else None,
+            mount_registered=(
+                mount_is_registered(current_mount) if current_mount else None
+            ),
             mount_sync_status=(
-                mount_sync_status(config, manifest.current_mount)
-                if manifest and manifest.current_mount
-                else None
+                mount_sync_status(config, current_mount) if current_mount else None
             ),
             manifest=manifest,
         )
@@ -180,9 +188,15 @@ def catalog_status(config: CatalogConfig) -> CatalogStatus:
         current_fingerprint = source_fingerprint(current_items)
         if manifest.source_fingerprint != current_fingerprint:
             stale_reasons.append("Source content fingerprint changed since last index.")
+        current_mount = (
+            safe_extract_current_mount(current_items, config) or current_mount
+        )
 
     state = "fresh" if not stale_reasons else "stale"
-    next_commands = [] if state == "fresh" else [f"catalog index --root {config.corpus_root}"]
+    next_commands = (
+        [] if state == "fresh" else [f"catalog index --root {config.corpus_root}"]
+    )
+    next_commands.extend(mount_registration_commands(config, current_mount))
 
     return CatalogStatus(
         state=state,
@@ -192,10 +206,28 @@ def catalog_status(config: CatalogConfig) -> CatalogStatus:
         missing_artifacts=missing_artifacts,
         stale_reasons=stale_reasons,
         next_commands=next_commands,
-        current_mount=manifest.current_mount,
-        mount_sync_status=mount_sync_status(config, manifest.current_mount),
+        current_mount=current_mount,
+        mount_registry_path=str(user_registry_path()) if current_mount else None,
+        mount_registered=mount_is_registered(current_mount) if current_mount else None,
+        mount_sync_status=mount_sync_status(config, current_mount),
         manifest=manifest,
     )
+
+
+def current_mount_from_source(config: CatalogConfig) -> CorpusMount | None:
+    try:
+        return safe_extract_current_mount(load_corpus(config), config)
+    except OSError:
+        return None
+
+
+def mount_registration_commands(
+    config: CatalogConfig,
+    mount: CorpusMount | None,
+) -> list[str]:
+    if mount is None or mount_is_registered(mount):
+        return []
+    return [f"catalog mounts --root {config.corpus_root}"]
 
 
 def load_fresh_indexed_corpus(config: CatalogConfig) -> list[CorpusItem] | None:

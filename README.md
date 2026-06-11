@@ -151,6 +151,11 @@ default, records the current mount in the per-user registry at
 `~/.corpus/mounts.json`. Set `CORPUS_HOME` to place that registry
 somewhere else for tests or isolated runs.
 
+`status` reports whether the current mount is already registered and
+suggests `catalog mounts --root <root>` when the local registry has not
+seen this mount/root pair. `validate` does not mutate the registry, but it
+emits a warning when the current mount is missing from the registry.
+
 `context`, `search`, and `validate` accept `--corpus` and `--mount`
 selectors. Selectors must match the declared current root identity by
 canonical URI or alias, such as `work/brief` or `work/brief@bilby`;

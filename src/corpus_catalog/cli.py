@@ -12,6 +12,7 @@ from corpus_catalog.identity import (
     CorpusIdentityError,
     build_mount_inventory,
     extract_current_mount,
+    mount_registration_warning,
     resolve_current_mount_selector,
 )
 from corpus_catalog.models import CatalogStatus, MountInventory
@@ -131,8 +132,11 @@ def main() -> None:
         print(json.dumps(format_search_results(args.query, items), indent=2))
     elif args.command == "validate":
         ensure_identity_selection(config, args.corpus, args.mount, parser)
-        index_catalog(config)
+        manifest = index_catalog(config)
         issues = validate_corpus(load_index_or_corpus(config), config)
+        warning = mount_registration_warning(config, manifest.current_mount)
+        if warning:
+            print(f"warning: {warning}", file=sys.stderr)
         if args.format == "markdown":
             report_path = config.catalog_dir / "reports" / "validation.md"
             print(report_path.read_text(encoding="utf-8"))
@@ -292,6 +296,10 @@ def format_status(status: CatalogStatus) -> str:
                 f"Sync transport: {status.current_mount.sync_transport or 'unknown'}",
             ]
         )
+        if status.mount_registry_path:
+            lines.append(f"Mount registry: {status.mount_registry_path}")
+            registered = "yes" if status.mount_registered else "no"
+            lines.append(f"Mount registered: {registered}")
     if status.mount_sync_status:
         lines.append(
             "Mount sync: "

@@ -5,6 +5,7 @@ from shutil import copytree
 from corpus_catalog.config import CatalogConfig
 from corpus_catalog.context import build_context_packet
 from corpus_catalog.corpus import load_corpus
+from corpus_catalog.identity import build_mount_inventory
 from corpus_catalog.naming import LEGACY_ENTRY_FILENAME
 from corpus_catalog.projects import build_project_creation_plan
 from corpus_catalog.storage import (
@@ -24,8 +25,10 @@ def copy_fixture(tmp_path: Path) -> Path:
     return root
 
 
-def test_init_creates_catalog_workbench_without_source_edits(tmp_path):
+def test_init_creates_catalog_workbench_without_source_edits(tmp_path, monkeypatch):
     root = copy_fixture(tmp_path)
+    registry_home = tmp_path / "corpus-home"
+    monkeypatch.setenv("CORPUS_HOME", str(registry_home))
     config = CatalogConfig(corpus_root=root)
 
     manifest = init_catalog(config)
@@ -45,7 +48,12 @@ def test_init_creates_catalog_workbench_without_source_edits(tmp_path):
 
     status = catalog_status(config)
     assert status.state == "stale"
-    assert status.next_commands == [f"catalog index --root {root}"]
+    assert status.next_commands == [
+        f"catalog index --root {root}",
+        f"catalog mounts --root {root}",
+    ]
+    assert status.mount_registry_path == str(registry_home / "mounts.json")
+    assert status.mount_registered is False
 
 
 def test_index_persists_inventory_validation_and_conformance(tmp_path):
@@ -348,6 +356,42 @@ def test_status_uses_content_hash_for_staleness(tmp_path):
 
     assert status.state == "stale"
     assert "Source content fingerprint changed since last index." in status.stale_reasons
+
+
+def test_status_suggests_mount_registration_when_current_mount_is_missing(
+    tmp_path,
+    monkeypatch,
+):
+    root = copy_fixture(tmp_path)
+    registry_home = tmp_path / "corpus-home"
+    monkeypatch.setenv("CORPUS_HOME", str(registry_home))
+    config = CatalogConfig(corpus_root=root)
+    index_catalog(config)
+
+    status = catalog_status(config)
+
+    assert status.state == "fresh"
+    assert status.mount_registry_path == str(registry_home / "mounts.json")
+    assert status.mount_registered is False
+    assert status.next_commands == [f"catalog mounts --root {root}"]
+
+
+def test_status_omits_mount_registration_command_when_registered(
+    tmp_path,
+    monkeypatch,
+):
+    root = copy_fixture(tmp_path)
+    registry_home = tmp_path / "corpus-home"
+    monkeypatch.setenv("CORPUS_HOME", str(registry_home))
+    config = CatalogConfig(corpus_root=root)
+    index_catalog(config)
+    build_mount_inventory(load_corpus(config), config)
+
+    status = catalog_status(config)
+
+    assert status.state == "fresh"
+    assert status.mount_registered is True
+    assert status.next_commands == []
 
 
 def test_context_packet_uses_fresh_index_metadata(tmp_path):

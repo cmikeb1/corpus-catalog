@@ -154,6 +154,47 @@ def test_mounts_cli_reports_and_registers_current_mount(
     )
 
 
+def test_validate_warns_when_current_mount_is_not_registered(
+    tmp_path,
+    monkeypatch,
+    capsys,
+):
+    root = copy_fixture(tmp_path)
+    registry_home = tmp_path / "corpus-home"
+    monkeypatch.setenv("CORPUS_HOME", str(registry_home))
+    monkeypatch.chdir(root)
+    monkeypatch.setattr(sys, "argv", ["catalog", "validate", "--format", "json"])
+
+    main()
+
+    captured = capsys.readouterr()
+    assert json.loads(captured.out) == []
+    assert "warning: Current mount corpus://cmikeb/work/brief@bilby" in captured.err
+    assert f"run catalog mounts --root {root.resolve()}" in captured.err
+
+
+def test_validate_does_not_warn_when_current_mount_is_registered(
+    tmp_path,
+    monkeypatch,
+    capsys,
+):
+    root = copy_fixture(tmp_path)
+    registry_home = tmp_path / "corpus-home"
+    monkeypatch.setenv("CORPUS_HOME", str(registry_home))
+    monkeypatch.chdir(root)
+
+    monkeypatch.setattr(sys, "argv", ["catalog", "mounts"])
+    main()
+    capsys.readouterr()
+
+    monkeypatch.setattr(sys, "argv", ["catalog", "validate", "--format", "json"])
+    main()
+
+    captured = capsys.readouterr()
+    assert json.loads(captured.out) == []
+    assert captured.err == ""
+
+
 def test_search_cli_accepts_declared_corpus_alias(tmp_path, monkeypatch, capsys):
     root = copy_fixture(tmp_path)
     monkeypatch.chdir(root)
