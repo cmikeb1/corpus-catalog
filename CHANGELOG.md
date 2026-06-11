@@ -4,12 +4,14 @@ Release history for the `corpus-catalog` Python package and CLI.
 
 ## Unreleased
 
+- Nothing yet.
+
+## v0.2.0 - 2026-06-10
+
 - Added canonical `CORPUS.md`, `CORPUS-SPEC.md`, and
-  `corpus_spec_*` support for the upcoming corpus naming cutover while
-  keeping `CORPUS.md`, `CORPUS-SPEC.md`, and `corpus_spec_*` readable as migration
-  aliases.
-- Changed generated `.corpus/` orientation from `.corpus/CORPUS.md` to
-  `.corpus/CORPUS.md`.
+  `corpus_spec_*` support for the corpus naming cutover while keeping
+  temporary read aliases for pre-cutover corpora.
+- Changed generated `.corpus/` orientation to `.corpus/CORPUS.md`.
 - Updated project-creation plans to scaffold `CORPUS.md` and report
   `corpus_spec_baseline`.
 - Added duplicate-entry validation when `CORPUS.md` and a legacy entry

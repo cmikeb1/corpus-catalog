@@ -56,8 +56,8 @@ def test_index_persists_inventory_validation_and_conformance(tmp_path):
 
     assert manifest.source_count == 14
     assert manifest.validation_issue_count == 0
-    assert manifest.catalog_version == "0.1.0"
-    assert manifest.validated_corpus_spec_version == "v0.19"
+    assert manifest.catalog_version == "0.2.0"
+    assert manifest.validated_corpus_spec_version == "v0.20"
     assert manifest.corpus_spec_baseline == "v0.18"
     assert manifest.corpus_identity is not None
     assert manifest.corpus_identity.corpus_uri == "corpus://cmikeb/work/brief"

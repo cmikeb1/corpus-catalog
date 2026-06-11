@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "corpus-catalog"
-version = "0.1.0"
+version = "0.2.0"
 description = "CORPUS-SPEC-coupled corpus catalog CLI and context packet builder."
 readme = "README.md"
 requires-python = ">=3.12"
@@ -22,7 +22,7 @@ dev = [
 catalog = "corpus_catalog.cli:main"
 
 [tool.corpus-catalog.release]
-validated-corpus-spec = "v0.19"
+validated-corpus-spec = "v0.20"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/corpus_catalog"]
