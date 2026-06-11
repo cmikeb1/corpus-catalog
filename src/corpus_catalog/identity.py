@@ -17,6 +17,7 @@ from corpus_catalog.models import (
     MountInventory,
     MountSyncStatus,
 )
+from corpus_catalog.naming import entry_paths, field_value
 
 
 CORPUS_URI_RE = re.compile(
@@ -43,17 +44,13 @@ def extract_current_mount(
 def mount_from_front_matter(
     front_matter: dict[str, Any], config: CatalogConfig
 ) -> CorpusMount | None:
-    corpus_uri = string_field(front_matter, "corpus_uri", "ai_spec_corpus_uri")
-    mount_uri = string_field(front_matter, "mount_uri", "ai_spec_mount_uri")
-    owner_id = string_field(front_matter, "corpus_owner_id", "ai_spec_owner_id")
-    realm = string_field(front_matter, "corpus_realm", "ai_spec_realm")
-    tier = string_field(front_matter, "corpus_tier", "ai_spec_tier")
-    node_id = string_field(front_matter, "corpus_node_id", "ai_spec_node_id")
-    sync_transport = string_field(
-        front_matter,
-        "corpus_sync_transport",
-        "ai_spec_sync_transport",
-    )
+    corpus_uri = string_field(front_matter, "corpus_spec_corpus_uri")
+    mount_uri = string_field(front_matter, "corpus_spec_mount_uri")
+    owner_id = string_field(front_matter, "corpus_spec_owner_id")
+    realm = string_field(front_matter, "corpus_spec_realm")
+    tier = string_field(front_matter, "corpus_spec_tier")
+    node_id = string_field(front_matter, "corpus_spec_node_id")
+    sync_transport = string_field(front_matter, "corpus_spec_sync_transport")
 
     if not any((corpus_uri, mount_uri, owner_id, realm, tier, node_id)):
         return None
@@ -297,14 +294,16 @@ def run_git(root: Path, *args: str) -> str | None:
 
 def root_entry_item(items: list[CorpusItem]) -> CorpusItem | None:
     by_path = {item.source.path: item for item in items}
-    return by_path.get("corpus.md") or by_path.get("AI.md")
+    for path in entry_paths():
+        if item := by_path.get(path):
+            return item
+    return None
 
 
-def string_field(front_matter: dict[str, Any], *keys: str) -> str | None:
-    for key in keys:
-        value = front_matter.get(key)
-        if value is not None:
-            return str(value)
+def string_field(front_matter: dict[str, Any], key: str) -> str | None:
+    value = field_value(front_matter, key)
+    if value is not None:
+        return str(value)
     return None
 
 

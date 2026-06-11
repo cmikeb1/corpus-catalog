@@ -1,4 +1,4 @@
-"""AI-SPEC Catalog CLI and library surface."""
+"""CORPUS-SPEC Catalog CLI and library surface."""
 
 from corpus_catalog.config import CatalogConfig
 from corpus_catalog.context import build_context_packet

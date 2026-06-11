@@ -11,6 +11,7 @@ from corpus_catalog.identity import (
     extract_current_mount,
     resolve_current_mount_selector,
 )
+from corpus_catalog.naming import LEGACY_ENTRY_DOC_TYPE, LEGACY_ENTRY_FILENAME, legacy_field
 
 
 FIXTURE_ROOT = Path(__file__).parent / "fixtures" / "mini_brief"
@@ -38,6 +39,38 @@ def test_extract_current_mount_from_root_identity(tmp_path):
     assert mount.sync_transport == "git"
     assert "work/brief" in mount.aliases
     assert "work/brief@bilby" in mount.aliases
+
+
+def test_extract_current_mount_from_legacy_root_identity(tmp_path):
+    root = copy_fixture(tmp_path)
+    canonical = root / "CORPUS.md"
+    legacy = root / LEGACY_ENTRY_FILENAME
+    text = canonical.read_text(encoding="utf-8")
+    text = (
+        text.replace("doc_type: corpus-entry", f"doc_type: {LEGACY_ENTRY_DOC_TYPE}")
+        .replace("corpus_spec_version:", f"{legacy_field('version')}:")
+        .replace("corpus_spec_profile:", f"{legacy_field('profile')}:")
+        .replace("corpus_spec_adoption:", f"{legacy_field('adoption')}:")
+        .replace("corpus_spec_reviewed:", f"{legacy_field('reviewed')}:")
+        .replace("corpus_spec_betas:", f"{legacy_field('betas')}:")
+        .replace("corpus_spec_corpus_uri:", f"{legacy_field('corpus_uri')}:")
+        .replace("corpus_spec_mount_uri:", f"{legacy_field('mount_uri')}:")
+        .replace("corpus_spec_owner_id:", f"{legacy_field('owner_id')}:")
+        .replace("corpus_spec_realm:", f"{legacy_field('realm')}:")
+        .replace("corpus_spec_tier:", f"{legacy_field('tier')}:")
+        .replace("corpus_spec_node_id:", f"{legacy_field('node_id')}:")
+        .replace("corpus_spec_sync_transport:", f"{legacy_field('sync_transport')}:")
+    )
+    legacy.write_text(text, encoding="utf-8")
+    canonical.unlink()
+    config = CatalogConfig(corpus_root=root)
+
+    mount = extract_current_mount(load_corpus(config), config)
+
+    assert mount is not None
+    assert mount.corpus_uri == "corpus://cmikeb/work/brief"
+    assert mount.mount_uri == "corpus://cmikeb/work/brief@bilby"
+    assert mount.sync_transport == "git"
 
 
 def test_resolve_current_mount_selector_accepts_uri_and_alias(tmp_path):
@@ -73,10 +106,10 @@ def test_resolve_current_mount_selector_rejects_other_mount(tmp_path):
 
 def test_partial_identity_does_not_mint_missing_uri(tmp_path):
     root = copy_fixture(tmp_path)
-    handbook = root / "AI.md"
+    handbook = root / "CORPUS.md"
     text = handbook.read_text(encoding="utf-8")
     handbook.write_text(
-        text.replace("ai_spec_mount_uri: corpus://cmikeb/work/brief@bilby\n", ""),
+        text.replace("corpus_spec_mount_uri: corpus://cmikeb/work/brief@bilby\n", ""),
         encoding="utf-8",
     )
     config = CatalogConfig(corpus_root=root)

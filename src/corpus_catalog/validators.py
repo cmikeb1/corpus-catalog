@@ -11,16 +11,16 @@ from corpus_catalog.config import (
 from corpus_catalog.corpus import ignore_pattern_matches, load_corpus_ignore_patterns
 from corpus_catalog.identity import CorpusIdentityError, extract_current_mount
 from corpus_catalog.models import CorpusItem, SourceRef, ValidationIssue
-
-
-AI_REQUIRED_FRONTMATTER = (
-    "doc_type",
-    "ai_spec_version",
-    "ai_spec_profile",
-    "ai_spec_adoption",
-    "ai_spec_reviewed",
-    "ai_spec_betas",
+from corpus_catalog.naming import (
+    CANONICAL_ENTRY_FILENAME,
+    ENTRY_FILENAMES,
+    REQUIRED_CORPUS_ENTRY_FIELDS,
+    entry_paths,
+    field_value,
+    has_field,
 )
+
+
 OVERVIEW_REQUIRED_SECTIONS = (
     "Lifecycle Status",
     "Sequence Counters",
@@ -28,8 +28,7 @@ OVERVIEW_REQUIRED_SECTIONS = (
     "Active Epics",
     "Recommendations",
 )
-ROOT_ENTRY_PATHS = ("corpus.md", "AI.md")
-HANDBOOK_ENTRY_FILENAMES = frozenset(ROOT_ENTRY_PATHS)
+HANDBOOK_ENTRY_FILENAMES = frozenset(ENTRY_FILENAMES)
 BETA_STEWARDSHIP_RE = re.compile(
     r"Beta stewardship epic:\s*Spec project\s+`?([0-9]{3}-[A-Z0-9][A-Z0-9-]*)`?",
     re.IGNORECASE,
@@ -64,12 +63,13 @@ def validate_core_rules(
             ValidationIssue(
                 code="core-missing-root-handbook",
                 severity="error",
-                message="Corpus root does not contain corpus.md or AI.md.",
-                source=SourceRef(path="corpus.md", kind="handbook"),
+                message="Corpus root does not contain CORPUS.md or a legacy entry file.",
+                source=SourceRef(path=CANONICAL_ENTRY_FILENAME, kind="handbook"),
                 baseline=baseline,
             )
         )
     else:
+        issues.extend(validate_duplicate_entry_files(by_path, baseline))
         issues.extend(validate_corpus_identity(items, config, baseline))
 
     issues.extend(validate_corpusignore(config, baseline))
@@ -78,16 +78,16 @@ def validate_core_rules(
         if item.source.kind == "handbook":
             missing_fields = [
                 field
-                for field in AI_REQUIRED_FRONTMATTER
-                if field not in item.front_matter
+                for field in REQUIRED_CORPUS_ENTRY_FIELDS
+                if not has_field(item.front_matter, field)
             ]
             if missing_fields:
                 issues.append(
                     ValidationIssue(
-                        code="core-ai-handbook-missing-frontmatter",
+                        code="core-corpus-entry-missing-frontmatter",
                         severity="warning",
                         message=(
-                            f"{item.source.path} is missing required AI-SPEC "
+                            f"{item.source.path} is missing required CORPUS-SPEC "
                             "frontmatter fields: "
                             + ", ".join(missing_fields)
                         ),
@@ -163,7 +163,7 @@ def validate_spec_and_profile_rules(
             continue
         if not is_spec_owned_module(item):
             continue
-        if str(item.front_matter.get("ai_spec_status", "")).casefold() != "beta":
+        if str(field_value(item.front_matter, "corpus_spec_status") or "").casefold() != "beta":
             continue
 
         code_prefix = "spec" if item.source.kind == "spec-module" else "profile"
@@ -299,10 +299,10 @@ def validate_reference_profile_rules(
                 code="profile-reference-missing-root-entry",
                 severity="warning",
                 message=(
-                    "Reference profile is active but reference/corpus.md "
-                    "or reference/AI.md is missing."
+                    "Reference profile is active but reference/CORPUS.md "
+                    "or a legacy reference entry file is missing."
                 ),
-                source=SourceRef(path="reference/corpus.md", kind="handbook"),
+                source=SourceRef(path="reference/CORPUS.md", kind="handbook"),
                 baseline=baseline,
             )
         )
@@ -325,10 +325,10 @@ def validate_reference_profile_rules(
                 code="profile-reference-subsection-missing-entry",
                 severity="warning",
                 message=(
-                    "Reference subsection is missing corpus.md or AI.md "
+                    "Reference subsection is missing CORPUS.md or a legacy "
                     "profile entry."
                 ),
-                source=SourceRef(path=f"{rel_path}/corpus.md", kind="handbook"),
+                source=SourceRef(path=f"{rel_path}/CORPUS.md", kind="handbook"),
                 baseline=baseline,
             )
         )
@@ -398,11 +398,42 @@ def corpusignore_covers_recommended_pattern(
 
 
 def root_entry_item(by_path: dict[str, CorpusItem]) -> CorpusItem | None:
-    for path in ROOT_ENTRY_PATHS:
+    for path in entry_paths():
         item = by_path.get(path)
         if item is not None:
             return item
     return None
+
+
+def validate_duplicate_entry_files(
+    by_path: dict[str, CorpusItem], baseline: str | None
+) -> list[ValidationIssue]:
+    issues: list[ValidationIssue] = []
+    scopes: dict[str, list[str]] = {}
+    for path in by_path:
+        parts = path.split("/")
+        if parts[-1] not in ENTRY_FILENAMES:
+            continue
+        scope = "/".join(parts[:-1])
+        scopes.setdefault(scope, []).append(path)
+
+    for paths in scopes.values():
+        if len(paths) <= 1 or not any(path.endswith("/CORPUS.md") or path == "CORPUS.md" for path in paths):
+            continue
+        issues.append(
+            ValidationIssue(
+                code="core-corpus-entry-duplicate-legacy",
+                severity="warning",
+                message=(
+                    "CORPUS.md and a legacy entry file both exist for the "
+                    "same scope; prefer CORPUS.md and remove the legacy entry "
+                    "after migration."
+                ),
+                source=SourceRef(path=sorted(paths)[0], kind="handbook"),
+                baseline=baseline,
+            )
+        )
+    return issues
 
 
 def beta_stewardship_epic(text: str) -> str | None:
@@ -435,8 +466,8 @@ def is_spec_owned_module(item: CorpusItem) -> bool:
         (
             "projects/spec/code/corpus-spec/specs/",
             "projects/spec/code/corpus-spec/profiles/",
-            "projects/spec/code/ai-spec/specs/",
-            "projects/spec/code/ai-spec/profiles/",
+            "projects/spec/code/corpus-spec/specs/",
+            "projects/spec/code/corpus-spec/profiles/",
         )
     )
 
@@ -499,8 +530,8 @@ def is_project_handbook(item: CorpusItem) -> bool:
 
 
 def project_overview_required(item: CorpusItem) -> bool:
-    profile = item.front_matter.get("ai_spec_profile")
-    adoption = item.front_matter.get("ai_spec_adoption")
+    profile = field_value(item.front_matter, "corpus_spec_profile")
+    adoption = field_value(item.front_matter, "corpus_spec_adoption")
     return not (profile == "project-shell" and adoption == "pre-spec")
 
 
@@ -534,12 +565,12 @@ def corpus_baseline(items: list[CorpusItem]) -> str | None:
     by_path = {item.source.path: item for item in items}
     root_item = root_entry_item(by_path)
     if root_item is not None:
-        root_version = root_item.front_matter.get("ai_spec_version")
+        root_version = field_value(root_item.front_matter, "corpus_spec_version")
         if root_version:
             return str(root_version)
 
     for item in sorted(items, key=lambda candidate: candidate.source.path):
-        version = item.front_matter.get("ai_spec_version")
+        version = field_value(item.front_matter, "corpus_spec_version")
         if version:
             return str(version)
     return None

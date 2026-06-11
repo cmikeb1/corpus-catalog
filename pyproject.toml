@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "corpus-catalog"
 version = "0.1.0"
-description = "AI-SPEC-coupled corpus catalog CLI and context packet builder."
+description = "CORPUS-SPEC-coupled corpus catalog CLI and context packet builder."
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [

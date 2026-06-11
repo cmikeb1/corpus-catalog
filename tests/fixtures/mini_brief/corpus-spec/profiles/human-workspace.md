@@ -1,9 +1,9 @@
 ---
-title: "AI-SPEC Profile - Human Workspace"
-doc_type: ai-spec-profile
-ai_spec_version: v0.18
-ai_spec_profile_id: human-workspace
-ai_spec_status: stable
+title: "CORPUS-SPEC Profile - Human Workspace"
+doc_type: corpus-spec-profile
+corpus_spec_version: v0.18
+corpus_spec_profile_id: human-workspace
+corpus_spec_status: stable
 ---
 
 # Human Workspace Profile

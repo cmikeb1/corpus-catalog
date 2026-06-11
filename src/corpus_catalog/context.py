@@ -5,6 +5,7 @@ from pathlib import Path
 from corpus_catalog.config import CatalogConfig
 from corpus_catalog.corpus import search_corpus, source_fingerprint
 from corpus_catalog.models import CatalogQuery, ContextItem, ContextPacket, CorpusItem
+from corpus_catalog.naming import LEGACY_SPEC_DIR_NAME, entry_paths, field_value
 from corpus_catalog.storage import load_index_or_corpus, read_manifest
 from corpus_catalog.validators import corpus_baseline, validate_corpus
 
@@ -30,7 +31,9 @@ def build_context_packet(
             "Use generated context as a bounded starting point, not as memory.",
             "Keep write workflows explicit: propose, validate, diff, approve, apply.",
         ],
-        baseline=manifest.ai_spec_baseline if manifest else corpus_baseline(items),
+        baseline=(
+            manifest.corpus_spec_baseline if manifest else corpus_baseline(items)
+        ),
         source_fingerprint=(
             manifest.source_fingerprint if manifest else source_fingerprint(items)
         ),
@@ -52,11 +55,17 @@ def select_context_items(
         if item and item not in selected:
             selected.append(item)
 
-    add("AI.md")
+    def add_first(paths: tuple[str, ...]) -> None:
+        for path in paths:
+            if path in by_path:
+                add(path)
+                return
+
+    add_first(entry_paths())
 
     if cwd_path is not None:
-        for handbook_path in cascading_handbooks(cwd_path, config):
-            add(handbook_path)
+        for handbook_paths in cascading_handbooks(cwd_path, config):
+            add_first(handbook_paths)
 
         project_path = project_overview_path(cwd_path)
         if project_path:
@@ -210,9 +219,9 @@ def module_type_for_item(item: CorpusItem) -> str | None:
 
 def module_id_for_item(item: CorpusItem) -> str:
     if item.source.kind == "profile-module":
-        value = item.front_matter.get("ai_spec_profile_id")
+        value = field_value(item.front_matter, "corpus_spec_profile_id")
     else:
-        value = item.front_matter.get("ai_spec_spec_id")
+        value = field_value(item.front_matter, "corpus_spec_spec_id")
 
     if value:
         return str(value)
@@ -223,9 +232,9 @@ def module_preference_rank(item: CorpusItem) -> tuple[int, str]:
     path = item.source.path
     preferred_prefixes = (
         "projects/spec/code/corpus-spec/",
-        "projects/spec/code/ai-spec/",
+        f"projects/spec/code/{LEGACY_SPEC_DIR_NAME}/",
         "corpus-spec/",
-        "ai-spec/",
+        f"{LEGACY_SPEC_DIR_NAME}/",
     )
     for index, prefix in enumerate(preferred_prefixes):
         if path.startswith(prefix):
@@ -261,12 +270,12 @@ def normalize_cwd(cwd: str | Path | None, config: CatalogConfig) -> Path | None:
         return None
 
 
-def cascading_handbooks(cwd_path: Path, config: CatalogConfig) -> list[str]:
-    paths = ["AI.md"]
+def cascading_handbooks(cwd_path: Path, config: CatalogConfig) -> list[tuple[str, ...]]:
+    paths = [entry_paths()]
     parts = list(cwd_path.parts)
     for index in range(1, len(parts) + 1):
-        candidate = Path(*parts[:index]) / "AI.md"
-        paths.append(candidate.as_posix())
+        scope = Path(*parts[:index]).as_posix()
+        paths.append(entry_paths(scope))
     return paths
 
 

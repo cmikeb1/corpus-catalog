@@ -15,6 +15,7 @@ from corpus_catalog.identity import (
     resolve_current_mount_selector,
 )
 from corpus_catalog.models import CatalogStatus, MountInventory
+from corpus_catalog.naming import entry_paths, field_value
 from corpus_catalog.projects import build_project_creation_plan
 from corpus_catalog.release import release_metadata
 from corpus_catalog.storage import (
@@ -201,11 +202,11 @@ def ensure_identity_selection(
 def looks_like_corpus_root(path: Path) -> bool:
     if (path / ".corpus").is_dir():
         return True
-    if not (path / "AI.md").is_file():
+    if not any((path / entry).is_file() for entry in entry_paths()):
         return False
     return any(
         (path / name).exists()
-        for name in ("projects", "reference", "corpus-spec", "ai-spec")
+        for name in ("projects", "reference", "corpus-spec", "corpus-spec")
     )
 
 
@@ -225,13 +226,19 @@ def format_search_results(query: str, items) -> list[dict[str, object]]:
 def search_metadata(front_matter: dict[str, object]) -> dict[str, object]:
     keys = (
         "doc_type",
-        "ai_spec_version",
-        "ai_spec_profile",
-        "ai_spec_adoption",
-        "ai_spec_reviewed",
-        "ai_spec_betas",
+        "corpus_spec_version",
+        "corpus_spec_profile",
+        "corpus_spec_adoption",
+        "corpus_spec_reviewed",
+        "corpus_spec_betas",
     )
-    return {key: front_matter[key] for key in keys if key in front_matter}
+    metadata = {}
+    for key in keys:
+        if key == "doc_type" and key in front_matter:
+            metadata[key] = front_matter[key]
+        elif key != "doc_type" and (value := field_value(front_matter, key)) is not None:
+            metadata[key] = value
+    return metadata
 
 
 def search_snippet(query: str, text: str, context_chars: int = 140) -> str | None:
@@ -273,8 +280,8 @@ def format_status(status: CatalogStatus) -> str:
             "Validated corpus-spec: "
             f"{status.manifest.validated_corpus_spec_version or 'unknown'}"
         )
-    if status.manifest and status.manifest.ai_spec_baseline:
-        lines.append(f"AI-SPEC baseline: {status.manifest.ai_spec_baseline}")
+    if status.manifest and status.manifest.corpus_spec_baseline:
+        lines.append(f"CORPUS-SPEC baseline: {status.manifest.corpus_spec_baseline}")
     if status.current_mount:
         lines.extend(
             [

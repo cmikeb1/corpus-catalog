@@ -5,6 +5,7 @@ from shutil import copytree
 from corpus_catalog.config import CatalogConfig
 from corpus_catalog.context import build_context_packet
 from corpus_catalog.corpus import load_corpus
+from corpus_catalog.naming import LEGACY_ENTRY_FILENAME
 from corpus_catalog.projects import build_project_creation_plan
 from corpus_catalog.storage import (
     catalog_status,
@@ -34,7 +35,7 @@ def test_init_creates_catalog_workbench_without_source_edits(tmp_path):
     assert manifest.corpus_identity.corpus_uri == "corpus://cmikeb/work/brief"
     assert manifest.current_mount is not None
     assert manifest.current_mount.mount_uri == "corpus://cmikeb/work/brief@bilby"
-    assert (root / ".corpus" / "AI.md").exists()
+    assert (root / ".corpus" / "CORPUS.md").exists()
     assert (root / ".corpus" / "manifest.json").exists()
     assert (root / ".corpus" / "indexes").is_dir()
     assert (root / ".corpus" / "reports").is_dir()
@@ -57,7 +58,7 @@ def test_index_persists_inventory_validation_and_conformance(tmp_path):
     assert manifest.validation_issue_count == 0
     assert manifest.catalog_version == "0.1.0"
     assert manifest.validated_corpus_spec_version == "v0.19"
-    assert manifest.ai_spec_baseline == "v0.18"
+    assert manifest.corpus_spec_baseline == "v0.18"
     assert manifest.corpus_identity is not None
     assert manifest.corpus_identity.corpus_uri == "corpus://cmikeb/work/brief"
     assert manifest.corpus_identity.aliases == ["work/brief", "cmikeb/work/brief"]
@@ -70,7 +71,7 @@ def test_index_persists_inventory_validation_and_conformance(tmp_path):
         "cmikeb/work/brief@bilby",
     ]
     assert {module.path: module.module_type for module in manifest.spec_modules} == {
-        "corpus-spec/AI-SPEC.md": "root-spec",
+        "corpus-spec/CORPUS-SPEC.md": "root-spec",
         "corpus-spec/profiles/human-workspace.md": "profile",
         "corpus-spec/profiles/initiatives.md": "profile",
         "corpus-spec/profiles/project.md": "profile",
@@ -80,7 +81,7 @@ def test_index_persists_inventory_validation_and_conformance(tmp_path):
         "corpus-spec/specs/tooling-and-validation.md": "spec",
     }
     assert {module.path: module.module_id for module in manifest.spec_modules} == {
-        "corpus-spec/AI-SPEC.md": "root",
+        "corpus-spec/CORPUS-SPEC.md": "root",
         "corpus-spec/profiles/human-workspace.md": "human-workspace",
         "corpus-spec/profiles/initiatives.md": "initiatives",
         "corpus-spec/profiles/project.md": "project",
@@ -90,8 +91,8 @@ def test_index_persists_inventory_validation_and_conformance(tmp_path):
         "corpus-spec/specs/tooling-and-validation.md": "tooling-and-validation",
     }
     assert {marker.path for marker in manifest.conformance} == {
-        "AI.md",
-        "corpus-spec/AI-SPEC.md",
+        "CORPUS.md",
+        "corpus-spec/CORPUS-SPEC.md",
         "corpus-spec/profiles/human-workspace.md",
         "corpus-spec/profiles/initiatives.md",
         "corpus-spec/profiles/project.md",
@@ -99,13 +100,13 @@ def test_index_persists_inventory_validation_and_conformance(tmp_path):
         "corpus-spec/specs/corpus-identity.md",
         "corpus-spec/specs/profile-composition.md",
         "corpus-spec/specs/tooling-and-validation.md",
-        "projects/demo/AI.md",
+        "projects/demo/CORPUS.md",
     }
     assert {
-        marker.path: marker.ai_spec_version for marker in manifest.conformance
+        marker.path: marker.corpus_spec_version for marker in manifest.conformance
     } == {
-        "AI.md": "v0.18",
-        "corpus-spec/AI-SPEC.md": "v0.18",
+        "CORPUS.md": "v0.18",
+        "corpus-spec/CORPUS-SPEC.md": "v0.18",
         "corpus-spec/profiles/human-workspace.md": "v0.18",
         "corpus-spec/profiles/initiatives.md": "v0.18",
         "corpus-spec/profiles/project.md": "v0.18",
@@ -113,7 +114,7 @@ def test_index_persists_inventory_validation_and_conformance(tmp_path):
         "corpus-spec/specs/corpus-identity.md": "v0.18",
         "corpus-spec/specs/profile-composition.md": "v0.18",
         "corpus-spec/specs/tooling-and-validation.md": "v0.18",
-        "projects/demo/AI.md": "v0.16",
+        "projects/demo/CORPUS.md": "v0.16",
     }
 
     assert (root / ".corpus" / "indexes" / "sources.jsonl").exists()
@@ -162,7 +163,7 @@ def test_index_persists_inventory_validation_and_conformance(tmp_path):
     assert issue_count == 0
     assert marker_count == 10
     assert spec_module_rows == [
-        ("corpus-spec/AI-SPEC.md", "root-spec", "root", None, "tier-root"),
+        ("corpus-spec/CORPUS-SPEC.md", "root-spec", "root", None, "tier-root"),
         (
             "corpus-spec/profiles/human-workspace.md",
             "profile",
@@ -245,7 +246,7 @@ def test_spec_and_profile_modules_are_first_class_sources(tmp_path):
 
     items = {item.source.path: item for item in load_corpus(config)}
 
-    assert items["corpus-spec/AI-SPEC.md"].source.kind == "spec-root"
+    assert items["corpus-spec/CORPUS-SPEC.md"].source.kind == "spec-root"
     assert items["corpus-spec/specs/profile-composition.md"].source.kind == "spec-module"
     assert items["corpus-spec/profiles/project.md"].source.kind == "profile-module"
 
@@ -284,20 +285,33 @@ def test_corpus_outputs_are_excluded_from_source_discovery(tmp_path):
     index_catalog(config)
 
     paths = {item.source.path for item in load_corpus(config)}
-    assert ".corpus/AI.md" not in paths
+    assert ".corpus/CORPUS.md" not in paths
     assert all(not path.startswith(".corpus/") for path in paths)
+
+
+def test_index_removes_legacy_generated_entry(tmp_path):
+    root = copy_fixture(tmp_path)
+    legacy_entry = root / ".corpus" / LEGACY_ENTRY_FILENAME
+    legacy_entry.parent.mkdir()
+    legacy_entry.write_text("# Legacy generated state\n", encoding="utf-8")
+    config = CatalogConfig(corpus_root=root)
+
+    index_catalog(config)
+
+    assert not legacy_entry.exists()
+    assert (root / ".corpus" / "CORPUS.md").is_file()
 
 
 def test_legacy_catalog_outputs_are_excluded_from_source_discovery(tmp_path):
     root = copy_fixture(tmp_path)
-    legacy_ai = root / ".catalog" / "AI.md"
+    legacy_ai = root / ".catalog" / LEGACY_ENTRY_FILENAME
     legacy_ai.parent.mkdir()
     legacy_ai.write_text("# Legacy generated state\n", encoding="utf-8")
     config = CatalogConfig(corpus_root=root)
 
     paths = {item.source.path for item in load_corpus(config)}
 
-    assert ".catalog/AI.md" not in paths
+    assert f".catalog/{LEGACY_ENTRY_FILENAME}" not in paths
     assert all(not path.startswith(".catalog/") for path in paths)
 
 
@@ -324,7 +338,7 @@ def test_status_uses_content_hash_for_staleness(tmp_path):
     config = CatalogConfig(corpus_root=root)
     index_catalog(config)
 
-    handbook = root / "projects" / "demo" / "AI.md"
+    handbook = root / "projects" / "demo" / "CORPUS.md"
     handbook.write_text(
         handbook.read_text(encoding="utf-8") + "\nAdditional guidance.\n",
         encoding="utf-8",
@@ -343,7 +357,7 @@ def test_context_packet_uses_fresh_index_metadata(tmp_path):
 
     indexed_items = load_fresh_indexed_corpus(config)
     packet = build_context_packet(
-        goal="Create a project according to the local AI-SPEC baseline",
+        goal="Create a project according to the local CORPUS-SPEC baseline",
         cwd="projects/demo",
         config=config,
     )
@@ -351,7 +365,7 @@ def test_context_packet_uses_fresh_index_metadata(tmp_path):
     assert indexed_items is not None
     assert packet.baseline == "v0.18"
     assert packet.source_fingerprint == manifest.source_fingerprint
-    assert "AI.md" in {item.source.path for item in packet.items}
+    assert "CORPUS.md" in {item.source.path for item in packet.items}
 
 
 def test_project_creation_plan_is_read_only_and_source_cited(tmp_path):
@@ -368,17 +382,17 @@ def test_project_creation_plan_is_read_only_and_source_cited(tmp_path):
     )
 
     assert plan.project_path == "projects/garden-tools"
-    assert plan.ai_spec_baseline == "v0.18"
+    assert plan.corpus_spec_baseline == "v0.18"
     assert plan.tag == "personal"
     assert plan.tier == "BRIEF"
     assert not plan.warnings
-    assert "AI.md" in {source.path for source in plan.sources}
+    assert "CORPUS.md" in {source.path for source in plan.sources}
     assert {file.path for file in plan.files} >= {
-        "projects/garden-tools/AI.md",
+        "projects/garden-tools/CORPUS.md",
         "projects/garden-tools/assets/OVERVIEW.md",
         "projects/garden-tools/assets/epics/001-BOOTSTRAP/SPIKE.md",
         "projects/garden-tools/assets/epics/001-BOOTSTRAP/TASKS.md",
-        "AI.md",
+        "CORPUS.md",
     }
     assert plan.commands == [
         'catalog context --cwd projects/garden-tools --goal "Create project Garden Tools"',

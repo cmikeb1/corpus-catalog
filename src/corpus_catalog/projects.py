@@ -4,6 +4,13 @@ import re
 
 from corpus_catalog.config import CatalogConfig
 from corpus_catalog.models import ProjectCreationPlan, ProjectPlanFile, SourceRef
+from corpus_catalog.naming import (
+    CANONICAL_ENTRY_FILENAME,
+    CANONICAL_SPEC_ROOT_FILENAME,
+    LEGACY_ENTRY_FILENAME,
+    LEGACY_SPEC_DIR_NAME,
+    LEGACY_SPEC_ROOT_FILENAME,
+)
 from corpus_catalog.storage import catalog_status, load_index_or_corpus, read_manifest
 from corpus_catalog.validators import corpus_baseline
 
@@ -16,7 +23,7 @@ def build_project_creation_plan(
     tier: str | None = None,
     lifecycle: str = "DRAFT",
 ) -> ProjectCreationPlan:
-    """Return a read-only plan for creating an AI-SPEC-shaped project."""
+    """Return a read-only plan for creating a CORPUS-SPEC-shaped project."""
 
     project_slug = slug or slugify(name)
     project_path = f"projects/{project_slug}"
@@ -24,18 +31,18 @@ def build_project_creation_plan(
     manifest = read_manifest(config)
     status = catalog_status(config)
     by_path = {item.source.path: item for item in items}
-    baseline = manifest.ai_spec_baseline if manifest else corpus_baseline(items)
+    baseline = manifest.corpus_spec_baseline if manifest else corpus_baseline(items)
 
     files = [
         ProjectPlanFile(
-            path=f"{project_path}/AI.md",
+            path=f"{project_path}/CORPUS.md",
             action="create",
-            purpose="Canonical AI entry point with AI-SPEC conformance frontmatter.",
+            purpose="Canonical corpus entry point with CORPUS-SPEC conformance frontmatter.",
         ),
         ProjectPlanFile(
             path=f"{project_path}/README.md",
             action="create",
-            purpose="Human-facing orientation that points readers to AI.md for state.",
+            purpose="Human-facing orientation that points readers to CORPUS.md for state.",
         ),
         ProjectPlanFile(
             path=f"{project_path}/assets/OVERVIEW.md",
@@ -56,10 +63,10 @@ def build_project_creation_plan(
         ProjectPlanFile(
             path=f"{project_path}/assets/epics/001-BOOTSTRAP/TASKS.md",
             action="create",
-            purpose="Opening epic task list with the AI-SPEC bookmark convention.",
+            purpose="Opening epic task list with the CORPUS-SPEC bookmark convention.",
         ),
         ProjectPlanFile(
-            path="AI.md",
+            path="CORPUS.md",
             action="update",
             purpose="Add the new project to the tier root's active project table.",
         ),
@@ -76,12 +83,15 @@ def build_project_creation_plan(
     sources = cite_sources(
         by_path,
         [
-            "AI.md",
-            "corpus-spec/AI-SPEC.md",
-            "projects/spec/code/corpus-spec/AI-SPEC.md",
-            "ai-spec/AI-SPEC.md",
-            "projects/spec/code/ai-spec/AI-SPEC.md",
-            "projects/spec/AI.md",
+            CANONICAL_ENTRY_FILENAME,
+            LEGACY_ENTRY_FILENAME,
+            f"corpus-spec/{CANONICAL_SPEC_ROOT_FILENAME}",
+            f"corpus-spec/{LEGACY_SPEC_ROOT_FILENAME}",
+            f"projects/spec/code/corpus-spec/{CANONICAL_SPEC_ROOT_FILENAME}",
+            f"projects/spec/code/corpus-spec/{LEGACY_SPEC_ROOT_FILENAME}",
+            f"{LEGACY_SPEC_DIR_NAME}/{LEGACY_SPEC_ROOT_FILENAME}",
+            f"projects/spec/code/{LEGACY_SPEC_DIR_NAME}/{LEGACY_SPEC_ROOT_FILENAME}",
+            f"projects/spec/{CANONICAL_ENTRY_FILENAME}",
             "projects/spec/assets/OVERVIEW.md",
         ],
     )
@@ -93,7 +103,7 @@ def build_project_creation_plan(
         lifecycle=lifecycle,
         tag=tag,
         tier=tier,
-        ai_spec_baseline=baseline,
+        corpus_spec_baseline=baseline,
         files=files,
         sources=sources,
         commands=[
@@ -104,7 +114,7 @@ def build_project_creation_plan(
         notes=[
             "This is a dry-run plan; Catalog did not create or modify files.",
             f"Run suggested commands from the corpus root: {config.corpus_root}.",
-            "Use the declared tier-root AI-SPEC baseline for scaffold details.",
+            "Use the declared tier-root CORPUS-SPEC baseline for scaffold details.",
             "Keep writes explicit, then validate and refresh .corpus derived state.",
         ],
         warnings=warnings,

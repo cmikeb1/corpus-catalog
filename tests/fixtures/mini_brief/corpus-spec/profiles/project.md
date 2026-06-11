@@ -1,9 +1,9 @@
 ---
-title: "AI-SPEC Profile - Project"
-doc_type: ai-spec-profile
-ai_spec_version: v0.18
-ai_spec_profile_id: project
-ai_spec_status: stable
+title: "CORPUS-SPEC Profile - Project"
+doc_type: corpus-spec-profile
+corpus_spec_version: v0.18
+corpus_spec_profile_id: project
+corpus_spec_status: stable
 ---
 
 # Project Profile

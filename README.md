@@ -1,17 +1,17 @@
 ---
 title: "Catalog"
 doc_type: tool-readme
-ai_spec_version: v0.19
+corpus_spec_version: v0.19
 status: prototype
 maturity: prototype
 ---
 
 # Catalog
 
-Catalog is the AI-SPEC-coupled CLI for making a directory of
+Catalog is the CORPUS-SPEC-coupled CLI for making a directory of
 well-organized Markdown files usable as a corpus.
 
-Markdown plus Git remains the source of truth. AI-SPEC defines the
+Markdown plus Git remains the source of truth. CORPUS-SPEC defines the
 organization rules and conformance levels. Catalog is the executable
 companion that reads those rules, builds a derived queryable view, and
 emits source-cited context packets and validation reports for humans,
@@ -25,17 +25,17 @@ adapter.
 
 The distinction matters:
 
-- **Files** are just Markdown plus Git until a reader applies AI-SPEC.
-- **AI-SPEC** defines the rules, profiles, version markers,
+- **Files** are just Markdown plus Git until a reader applies CORPUS-SPEC.
+- **CORPUS-SPEC** defines the rules, profiles, version markers,
   conformance levels, and migration posture.
 - **Catalog** is the executable reader over those files: inventory,
   search, validation, and source-cited context assembly.
-- **Corpus** is the result of applying Catalog and AI-SPEC to a
+- **Corpus** is the result of applying Catalog and CORPUS-SPEC to a
   mounted tree.
 - **Adapters** such as MCP servers, Codex tools, or CANS integrations
   can wrap the CLI later.
 
-Catalog should be tightly coupled to AI-SPEC versions. When AI-SPEC
+Catalog should be tightly coupled to CORPUS-SPEC versions. When CORPUS-SPEC
 changes project shape, front matter, conformance markers, or migration
 rules, Catalog should gain the matching selectors and validators.
 
@@ -48,11 +48,12 @@ adopted older project without forcing an immediate migration.
 The initial deterministic surface is:
 
 - discover relevant Markdown sources under a corpus root;
-- parse simple YAML-style front matter from `AI.md`, READMEs,
+- parse simple YAML-style front matter from `CORPUS.md`, legacy `CORPUS.md`,
+  READMEs,
   registries, overviews, and task files;
 - honor root `.corpusignore` rules before include pattern checks;
 - index active epic `SPIKE.md` files and reference Markdown by default;
-- model AI-SPEC root, spec, and profile modules as first-class sources;
+- model CORPUS-SPEC root, spec, and profile modules as first-class sources;
 - route context packets through owning profile/spec modules before
   lexical search;
 - parse corpus identity and mount identity from the tier-root entry;
@@ -97,7 +98,7 @@ catalog mounts
 catalog context \
   --root ../../.. \
   --cwd projects/spec \
-  --goal "Create a new project according to the local AI-SPEC baseline"
+  --goal "Create a new project according to the local CORPUS-SPEC baseline"
 ```
 
 Equivalent module invocation:
@@ -106,7 +107,7 @@ Equivalent module invocation:
 python -m corpus_catalog.cli context \
   --root ../../.. \
   --cwd projects/spec \
-  --goal "Create a new project according to the local AI-SPEC baseline"
+  --goal "Create a new project according to the local CORPUS-SPEC baseline"
 ```
 
 Search:
@@ -117,7 +118,7 @@ catalog search --corpus work/brief --query "context packet"
 ```
 
 `search` prints compact source hits for command-line use: source
-metadata, a matched snippet, selected AI-SPEC metadata, and content
+metadata, a matched snippet, selected CORPUS-SPEC metadata, and content
 hash. Use `context` when you want bounded source excerpts for agent
 work.
 
@@ -174,7 +175,7 @@ root. `catalog index` refreshes it from source Markdown.
 
 MVP artifacts:
 
-- `.corpus/AI.md` — generated orientation for humans and AI tools;
+- `.corpus/CORPUS.md` — generated orientation for humans and AI tools;
 - `.corpus/manifest.json` — Catalog version, corpus identity, current
   mount identity, baseline, freshness, source fingerprint, artifacts,
   conformance markers, and spec/profile module inventory;
@@ -224,8 +225,9 @@ Validation issue codes name the owning rule layer:
 - `spec-beta-*` and `profile-beta-*` cover beta stewardship checks in
   the Spec-owned source checkout.
 
-Root, project, and reference entrypoint checks accept current `AI.md`
-files and future `corpus.md` files during the CORPUS brand cutover.
+Root, project, and reference entrypoint checks prefer current
+`CORPUS.md` files and accept legacy `CORPUS.md` / `corpus.md` files during
+the naming cutover.
 
 ## Development
 

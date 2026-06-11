@@ -8,6 +8,7 @@ from typing import Any
 
 from corpus_catalog.config import CatalogConfig
 from corpus_catalog.models import CorpusItem, SourceRef
+from corpus_catalog.naming import LEGACY_SPEC_DIR_NAME, is_entry_path, is_spec_root_filename
 
 
 def load_corpus(config: CatalogConfig) -> list[CorpusItem]:
@@ -92,7 +93,7 @@ def parse_front_matter(raw: str) -> tuple[dict[str, Any], str, int]:
 
     This intentionally avoids making full YAML a core dependency. It
     supports the simple scalar and list forms currently used by
-    AI-SPEC handbooks and component-style metadata.
+    CORPUS-SPEC handbooks and component-style metadata.
     """
 
     lines = raw.splitlines()
@@ -174,12 +175,7 @@ def first_non_empty_line(body: str) -> str | None:
 
 
 def source_kind(rel_path: str):
-    if (
-        rel_path == "AI.md"
-        or rel_path == "corpus.md"
-        or rel_path.endswith("/AI.md")
-        or rel_path.endswith("/corpus.md")
-    ):
+    if is_entry_path(rel_path):
         return "handbook"
     if is_spec_root_path(rel_path):
         return "spec-root"
@@ -204,9 +200,9 @@ def source_kind(rel_path: str):
     if rel_path.startswith(
         (
             "corpus-spec/",
-            "ai-spec/",
+            f"{LEGACY_SPEC_DIR_NAME}/",
             "projects/spec/code/corpus-spec/",
-            "projects/spec/code/ai-spec/",
+            f"projects/spec/code/{LEGACY_SPEC_DIR_NAME}/",
         )
     ):
         return "spec"
@@ -214,15 +210,17 @@ def source_kind(rel_path: str):
 
 
 def is_spec_root_path(rel_path: str) -> bool:
+    parts = rel_path.split("/")
+    if not parts or not is_spec_root_filename(parts[-1]):
+        return False
     return rel_path in {
-        "corpus-spec/AI-SPEC.md",
-        "corpus-spec/corpus-spec.md",
-        "ai-spec/AI-SPEC.md",
-        "ai-spec/corpus-spec.md",
-        "projects/spec/code/corpus-spec/AI-SPEC.md",
-        "projects/spec/code/corpus-spec/corpus-spec.md",
-        "projects/spec/code/ai-spec/AI-SPEC.md",
-        "projects/spec/code/ai-spec/corpus-spec.md",
+        f"{prefix}/{parts[-1]}"
+        for prefix in (
+            "corpus-spec",
+            LEGACY_SPEC_DIR_NAME,
+            "projects/spec/code/corpus-spec",
+            f"projects/spec/code/{LEGACY_SPEC_DIR_NAME}",
+        )
     }
 
 
@@ -230,9 +228,9 @@ def is_spec_module_path(rel_path: str) -> bool:
     return rel_path.startswith(
         (
             "corpus-spec/specs/",
-            "ai-spec/specs/",
+            f"{LEGACY_SPEC_DIR_NAME}/specs/",
             "projects/spec/code/corpus-spec/specs/",
-            "projects/spec/code/ai-spec/specs/",
+            f"projects/spec/code/{LEGACY_SPEC_DIR_NAME}/specs/",
         )
     )
 
@@ -241,9 +239,9 @@ def is_profile_module_path(rel_path: str) -> bool:
     return rel_path.startswith(
         (
             "corpus-spec/profiles/",
-            "ai-spec/profiles/",
+            f"{LEGACY_SPEC_DIR_NAME}/profiles/",
             "projects/spec/code/corpus-spec/profiles/",
-            "projects/spec/code/ai-spec/profiles/",
+            f"projects/spec/code/{LEGACY_SPEC_DIR_NAME}/profiles/",
         )
     )
 

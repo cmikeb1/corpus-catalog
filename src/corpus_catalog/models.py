@@ -4,6 +4,8 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from corpus_catalog.naming import legacy_field, normalize_metadata_fields
+
 
 Severity = Literal["info", "warning", "error"]
 SourceKind = Literal[
@@ -106,20 +108,27 @@ class ContextPacket(BaseModel):
 
 
 class ConformanceMarker(BaseModel):
-    """Declared AI-SPEC conformance metadata discovered in source files."""
+    """Declared CORPUS-SPEC conformance metadata discovered in source files."""
 
     model_config = ConfigDict(extra="forbid")
 
     path: str
-    ai_spec_version: str | None = None
-    ai_spec_profile: str | None = None
-    ai_spec_adoption: str | None = None
-    ai_spec_reviewed: str | None = None
-    ai_spec_betas: list[str] = Field(default_factory=list)
+    corpus_spec_version: str | None = None
+    corpus_spec_profile: str | None = None
+    corpus_spec_adoption: str | None = None
+    corpus_spec_reviewed: str | None = None
+    corpus_spec_betas: list[str] = Field(default_factory=list)
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_legacy_fields(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            return normalize_metadata_fields(data)
+        return data
 
 
 class SpecModule(BaseModel):
-    """AI-SPEC root/spec/profile module discovered in source."""
+    """CORPUS-SPEC root/spec/profile module discovered in source."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -129,12 +138,19 @@ class SpecModule(BaseModel):
     title: str | None = None
     doc_type: str | None = None
     status: str | None = None
-    ai_spec_version: str | None = None
+    corpus_spec_version: str | None = None
     source_checkout: str | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_legacy_fields(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            return normalize_metadata_fields(data)
+        return data
 
 
 class CorpusIdentity(BaseModel):
-    """Logical AI-SPEC corpus identity declared by a corpus root."""
+    """Logical CORPUS-SPEC corpus identity declared by a corpus root."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -218,7 +234,7 @@ class CatalogManifest(BaseModel):
     corpus_root: str
     catalog_dir: str
     generated_at: str | None = None
-    ai_spec_baseline: str | None = None
+    corpus_spec_baseline: str | None = None
     source_fingerprint: str | None = None
     source_count: int = 0
     validation_issue_count: int = 0
@@ -227,6 +243,17 @@ class CatalogManifest(BaseModel):
     artifacts: list[CatalogArtifact] = Field(default_factory=list)
     conformance: list[ConformanceMarker] = Field(default_factory=list)
     spec_modules: list[SpecModule] = Field(default_factory=list)
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_legacy_fields(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            normalized = dict(data)
+            legacy_key = legacy_field("baseline")
+            if "corpus_spec_baseline" not in normalized and legacy_key in normalized:
+                normalized["corpus_spec_baseline"] = normalized.pop(legacy_key)
+            return normalized
+        return data
 
 
 class CatalogStatus(BaseModel):
@@ -258,7 +285,7 @@ class ProjectPlanFile(BaseModel):
 
 
 class ProjectCreationPlan(BaseModel):
-    """Dry-run contract for creating an AI-SPEC-shaped project."""
+    """Dry-run contract for creating a CORPUS-SPEC-shaped project."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -268,7 +295,7 @@ class ProjectCreationPlan(BaseModel):
     lifecycle: str
     tag: str | None = None
     tier: str | None = None
-    ai_spec_baseline: str | None = None
+    corpus_spec_baseline: str | None = None
     files: list[ProjectPlanFile]
     sources: list[SourceRef]
     commands: list[str]

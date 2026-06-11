@@ -25,6 +25,14 @@ from corpus_catalog.models import (
     SpecModule,
     ValidationIssue,
 )
+from corpus_catalog.naming import (
+    CANONICAL_ENTRY_FILENAME,
+    LEGACY_ENTRY_FILENAME,
+    LEGACY_LOWER_ENTRY_FILENAME,
+    LEGACY_SPEC_DIR_NAME,
+    field_value,
+    has_corpus_spec_metadata,
+)
 from corpus_catalog.release import catalog_version, VALIDATED_CORPUS_SPEC_VERSION
 from corpus_catalog.validators import validate_corpus
 
@@ -32,7 +40,7 @@ from corpus_catalog.validators import validate_corpus
 CATALOG_SCHEMA_VERSION = 1
 CATALOG_DIRS = ("indexes", "reports", "jobs", "embeddings")
 REQUIRED_ARTIFACTS = (
-    ("AI.md", "ai-readme"),
+    (CANONICAL_ENTRY_FILENAME, "corpus-readme"),
     ("manifest.json", "manifest"),
     ("catalog.sqlite", "sqlite"),
     ("indexes/sources.jsonl", "jsonl"),
@@ -76,7 +84,7 @@ def index_catalog(config: CatalogConfig) -> CatalogManifest:
     spec_modules = extract_spec_modules(items)
     current_mount = safe_extract_current_mount(items, config)
     corpus_identity = current_identity(current_mount)
-    baseline = select_ai_spec_baseline(markers)
+    baseline = select_corpus_spec_baseline(markers)
     issues = validate_corpus(items, config)
     fingerprint = source_fingerprint(items)
 
@@ -108,7 +116,7 @@ def index_catalog(config: CatalogConfig) -> CatalogManifest:
         corpus_root=str(config.corpus_root),
         catalog_dir=str(config.catalog_dir),
         generated_at=indexed_at,
-        ai_spec_baseline=baseline,
+        corpus_spec_baseline=baseline,
         source_fingerprint=fingerprint,
         source_count=len(items),
         validation_issue_count=len(issues),
@@ -315,6 +323,9 @@ def write_sqlite(
     with sqlite3.connect(sqlite_path) as connection:
         connection.executescript(
             """
+            drop table if exists conformance_markers;
+            drop table if exists spec_modules;
+
             create table if not exists sources (
               path text primary key,
               kind text not null,
@@ -345,11 +356,11 @@ def write_sqlite(
 
             create table if not exists conformance_markers (
               path text primary key,
-              ai_spec_version text,
-              ai_spec_profile text,
-              ai_spec_adoption text,
-              ai_spec_reviewed text,
-              ai_spec_betas_json text not null,
+              corpus_spec_version text,
+              corpus_spec_profile text,
+              corpus_spec_adoption text,
+              corpus_spec_reviewed text,
+              corpus_spec_betas_json text not null,
               indexed_at text not null
             );
 
@@ -360,7 +371,7 @@ def write_sqlite(
               title text,
               doc_type text,
               status text,
-              ai_spec_version text,
+              corpus_spec_version text,
               source_checkout text,
               indexed_at text not null
             );
@@ -463,22 +474,22 @@ def write_sqlite(
             """
             insert into conformance_markers (
               path,
-              ai_spec_version,
-              ai_spec_profile,
-              ai_spec_adoption,
-              ai_spec_reviewed,
-              ai_spec_betas_json,
+              corpus_spec_version,
+              corpus_spec_profile,
+              corpus_spec_adoption,
+              corpus_spec_reviewed,
+              corpus_spec_betas_json,
               indexed_at
             ) values (?, ?, ?, ?, ?, ?, ?)
             """,
             [
                 (
                     marker.path,
-                    marker.ai_spec_version,
-                    marker.ai_spec_profile,
-                    marker.ai_spec_adoption,
-                    marker.ai_spec_reviewed,
-                    json.dumps(marker.ai_spec_betas, sort_keys=True),
+                    marker.corpus_spec_version,
+                    marker.corpus_spec_profile,
+                    marker.corpus_spec_adoption,
+                    marker.corpus_spec_reviewed,
+                    json.dumps(marker.corpus_spec_betas, sort_keys=True),
                     indexed_at,
                 )
                 for marker in markers
@@ -493,7 +504,7 @@ def write_sqlite(
               title,
               doc_type,
               status,
-              ai_spec_version,
+              corpus_spec_version,
               source_checkout,
               indexed_at
             ) values (?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -506,7 +517,7 @@ def write_sqlite(
                     module.title,
                     module.doc_type,
                     module.status,
-                    module.ai_spec_version,
+                    module.corpus_spec_version,
                     module.source_checkout,
                     indexed_at,
                 )
@@ -613,7 +624,7 @@ def write_validation_report(
         "",
         f"Generated: {generated_at}",
         f"Corpus root: `{config.corpus_root}`",
-        f"AI-SPEC baseline: `{baseline or 'unknown'}`",
+        f"CORPUS-SPEC baseline: `{baseline or 'unknown'}`",
         f"Corpus URI: `{current_mount.corpus_uri if current_mount else 'unknown'}`",
         f"Mount URI: `{current_mount.mount_uri if current_mount else 'unknown'}`",
         f"Source fingerprint: `{fingerprint}`",
@@ -640,14 +651,18 @@ def write_validation_report(
 def write_catalog_ai(config: CatalogConfig, manifest: CatalogManifest) -> None:
     status_command = f"catalog status --root {config.corpus_root}"
     index_command = f"catalog index --root {config.corpus_root}"
+    legacy_path = config.catalog_dir / LEGACY_ENTRY_FILENAME
+    if legacy_path.is_file():
+        legacy_path.unlink()
+
     lines = [
         "---",
-        'title: "AI.md - Corpus Derived State"',
-        "doc_type: ai-entry",
+        'title: "CORPUS.md - Corpus Derived State"',
+        "doc_type: corpus-entry",
         "generated_by: catalog",
         "---",
         "",
-        "# AI.md - Corpus Derived State",
+        "# CORPUS.md - Corpus Derived State",
         "",
         "This `.corpus/` directory is generated by Catalog. "
         "Treat source corpus files as canonical.",
@@ -667,7 +682,7 @@ def write_catalog_ai(config: CatalogConfig, manifest: CatalogManifest) -> None:
         f"- Catalog version: `{manifest.catalog_version}`",
         "- Validated corpus-spec: "
         f"`{manifest.validated_corpus_spec_version or 'unknown'}`",
-        f"- AI-SPEC baseline: `{manifest.ai_spec_baseline or 'unknown'}`",
+        f"- CORPUS-SPEC baseline: `{manifest.corpus_spec_baseline or 'unknown'}`",
         f"- Source count: `{manifest.source_count}`",
         f"- Spec/profile modules: `{len(manifest.spec_modules)}`",
         f"- Validation issues: `{manifest.validation_issue_count}`",
@@ -688,24 +703,36 @@ def write_catalog_ai(config: CatalogConfig, manifest: CatalogManifest) -> None:
         "Do not edit these files by hand; rerun Catalog instead.",
         "",
     ]
-    (config.catalog_dir / "AI.md").write_text("\n".join(lines), encoding="utf-8")
+    (config.catalog_dir / CANONICAL_ENTRY_FILENAME).write_text(
+        "\n".join(lines), encoding="utf-8"
+    )
 
 
 def extract_conformance_markers(items: list[CorpusItem]) -> list[ConformanceMarker]:
     markers: list[ConformanceMarker] = []
     for item in items:
         front_matter = item.front_matter
-        if not any(key.startswith("ai_spec_") for key in front_matter):
+        if not has_corpus_spec_metadata(front_matter):
             continue
 
         markers.append(
             ConformanceMarker(
                 path=item.source.path,
-                ai_spec_version=string_or_none(front_matter.get("ai_spec_version")),
-                ai_spec_profile=string_or_none(front_matter.get("ai_spec_profile")),
-                ai_spec_adoption=string_or_none(front_matter.get("ai_spec_adoption")),
-                ai_spec_reviewed=string_or_none(front_matter.get("ai_spec_reviewed")),
-                ai_spec_betas=list_of_strings(front_matter.get("ai_spec_betas")),
+                corpus_spec_version=string_or_none(
+                    field_value(front_matter, "corpus_spec_version")
+                ),
+                corpus_spec_profile=string_or_none(
+                    field_value(front_matter, "corpus_spec_profile")
+                ),
+                corpus_spec_adoption=string_or_none(
+                    field_value(front_matter, "corpus_spec_adoption")
+                ),
+                corpus_spec_reviewed=string_or_none(
+                    field_value(front_matter, "corpus_spec_reviewed")
+                ),
+                corpus_spec_betas=list_of_strings(
+                    field_value(front_matter, "corpus_spec_betas")
+                ),
             )
         )
     return sorted(markers, key=lambda marker: marker.path)
@@ -725,8 +752,10 @@ def extract_spec_modules(items: list[CorpusItem]) -> list[SpecModule]:
                 module_id=spec_module_id(item, module_type),
                 title=item.title,
                 doc_type=string_or_none(item.front_matter.get("doc_type")),
-                status=string_or_none(item.front_matter.get("ai_spec_status")),
-                ai_spec_version=string_or_none(item.front_matter.get("ai_spec_version")),
+                status=string_or_none(field_value(item.front_matter, "corpus_spec_status")),
+                corpus_spec_version=string_or_none(
+                    field_value(item.front_matter, "corpus_spec_version")
+                ),
                 source_checkout=spec_source_checkout(item.source.path),
             )
         )
@@ -745,9 +774,9 @@ def spec_module_type(item: CorpusItem):
 
 def spec_module_id(item: CorpusItem, module_type: str) -> str:
     if module_type == "spec":
-        value = item.front_matter.get("ai_spec_spec_id")
+        value = field_value(item.front_matter, "corpus_spec_spec_id")
     elif module_type == "profile":
-        value = item.front_matter.get("ai_spec_profile_id")
+        value = field_value(item.front_matter, "corpus_spec_profile_id")
     else:
         value = "root"
 
@@ -757,21 +786,40 @@ def spec_module_id(item: CorpusItem, module_type: str) -> str:
 
 
 def spec_source_checkout(path: str) -> str | None:
-    if path.startswith(("projects/spec/code/corpus-spec/", "projects/spec/code/ai-spec/")):
+    if path.startswith(
+        (
+            "projects/spec/code/corpus-spec/",
+            f"projects/spec/code/{LEGACY_SPEC_DIR_NAME}/",
+        )
+    ):
         return "source-checkout"
-    if path.startswith(("corpus-spec/", "ai-spec/")):
+    if path.startswith(("corpus-spec/", f"{LEGACY_SPEC_DIR_NAME}/")):
         return "tier-root"
     return None
 
 
-def select_ai_spec_baseline(markers: list[ConformanceMarker]) -> str | None:
-    root_marker = next((marker for marker in markers if marker.path == "AI.md"), None)
-    if root_marker and root_marker.ai_spec_version:
-        return root_marker.ai_spec_version
+def select_corpus_spec_baseline(markers: list[ConformanceMarker]) -> str | None:
+    root_marker = next(
+        (marker for marker in markers if marker.path == CANONICAL_ENTRY_FILENAME),
+        None,
+    )
+    if root_marker and root_marker.corpus_spec_version:
+        return root_marker.corpus_spec_version
+
+    legacy_root_marker = next(
+        (
+            marker
+            for marker in markers
+            if marker.path in {LEGACY_LOWER_ENTRY_FILENAME, LEGACY_ENTRY_FILENAME}
+        ),
+        None,
+    )
+    if legacy_root_marker and legacy_root_marker.corpus_spec_version:
+        return legacy_root_marker.corpus_spec_version
 
     for marker in markers:
-        if marker.ai_spec_version:
-            return marker.ai_spec_version
+        if marker.corpus_spec_version:
+            return marker.corpus_spec_version
     return None
 
 

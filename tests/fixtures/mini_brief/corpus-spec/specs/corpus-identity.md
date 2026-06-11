@@ -1,9 +1,9 @@
 ---
-title: "AI-SPEC Spec - Corpus Identity"
-doc_type: ai-spec-spec
-ai_spec_version: v0.18
-ai_spec_spec_id: corpus-identity
-ai_spec_status: stable
+title: "CORPUS-SPEC Spec - Corpus Identity"
+doc_type: corpus-spec-spec
+corpus_spec_version: v0.18
+corpus_spec_spec_id: corpus-identity
+corpus_spec_status: stable
 ---
 
 # Corpus Identity Spec
