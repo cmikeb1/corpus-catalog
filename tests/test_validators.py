@@ -250,6 +250,32 @@ def test_reference_profile_warns_for_missing_reference_entries(tmp_path):
     assert "profile-reference-subsection-missing-entry" in codes
 
 
+def test_reference_profile_skips_corpusignored_subtree(tmp_path):
+    # BUG-001: a .corpusignore-covered subtree (e.g. an initiative's opaque
+    # document store) must not be flagged as missing reference subsections.
+    reference = tmp_path / "reference"
+    (reference).mkdir(parents=True)
+    (reference / "CORPUS.md").write_text("# Reference\n", encoding="utf-8")
+    store = reference / "initiatives" / "max-power" / "documents" / "Properties"
+    store.mkdir(parents=True)
+    (reference / "initiatives" / "CORPUS.md").write_text("# Initiatives\n", encoding="utf-8")
+    (reference / "initiatives" / "max-power" / "CORPUS.md").write_text("# MP\n", encoding="utf-8")
+    (store / "deal.pdf").write_text("x", encoding="utf-8")
+    (tmp_path / ".corpusignore").write_text(
+        "reference/initiatives/max-power/documents/\n", encoding="utf-8"
+    )
+    config = CatalogConfig(corpus_root=tmp_path)
+    items = [item("CORPUS.md", "handbook", front_matter=ai_front_matter())]
+
+    issues = [
+        issue
+        for issue in validate_corpus(items, config)
+        if issue.code == "profile-reference-subsection-missing-entry"
+    ]
+
+    assert not any("documents" in issue.source.path for issue in issues)
+
+
 def test_reference_profile_accepts_canonical_or_legacy_entries(tmp_path):
     reference = tmp_path / "reference"
     subsection = reference / "tools"

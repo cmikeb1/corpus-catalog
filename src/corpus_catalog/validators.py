@@ -8,7 +8,11 @@ from corpus_catalog.config import (
     RECOMMENDED_CORPUSIGNORE_PATTERNS,
     CatalogConfig,
 )
-from corpus_catalog.corpus import ignore_pattern_matches, load_corpus_ignore_patterns
+from corpus_catalog.corpus import (
+    ignore_pattern_matches,
+    load_corpus_ignore_patterns,
+    path_is_ignored,
+)
 from corpus_catalog.identity import CorpusIdentityError, extract_current_mount
 from corpus_catalog.models import CorpusItem, SourceRef, ValidationIssue
 from corpus_catalog.naming import (
@@ -311,13 +315,15 @@ def validate_reference_profile_rules(
     if not reference_root.exists():
         return issues
 
+    ignore_patterns = load_corpus_ignore_patterns(config)
     for directory in sorted(reference_root.rglob("*")):
         if not directory.is_dir() or path_has_excluded_part(config, directory):
             continue
+        rel_path = config.relative_path(directory)
+        if path_is_ignored(rel_path, ignore_patterns):
+            continue
         if not reference_section_has_content(config, directory):
             continue
-
-        rel_path = config.relative_path(directory)
         if reference_entry_exists(config, by_path, rel_path):
             continue
         issues.append(
