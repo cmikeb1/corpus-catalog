@@ -76,8 +76,8 @@ def test_version_cli_reports_release_metadata(monkeypatch, capsys):
 
     output = json.loads(capsys.readouterr().out)
     assert output == {
-        "catalog_version": "0.2.0",
-        "validated_corpus_spec_version": "v0.20",
+        "catalog_version": "0.3.0",
+        "validated_corpus_spec_version": "v0.21",
     }
 
 

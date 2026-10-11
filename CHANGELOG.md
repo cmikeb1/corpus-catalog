@@ -4,6 +4,23 @@ Release history for the `corpus-catalog` Python package and CLI.
 
 ## Unreleased
 
+No unreleased changes.
+
+## v0.3.0 - 2026-10-10
+
+Validated against `corpus-spec` `v0.21`.
+
+- Fixed BUG-001: the reference-subsection validator now honors
+  `.corpusignore`, so ignored directories under `reference/` no longer
+  produce `profile-reference-subsection-missing-entry` warnings.
+- `catalog validate` now warns when the current mount is missing from
+  the local mount registry, and `catalog status` reports registration
+  state and suggests `catalog mounts --root <root>`.
+- Bumped the validated `corpus-spec` release from `v0.20` to `v0.21`
+  (`pyproject.toml` and the `corpus_catalog.release` runtime mirror).
+- Install note: `scripts/install-catalog-release` reinstalls the stable
+  `catalog` tool from the new wheel; `scripts/install-catalog-dev` keeps
+  the source-backed `catalog-dev` wrapper.
 - Added `catalog stats` for local corpus file/byte inventory, Markdown
   versus non-Markdown balance, Catalog-visible source counts, extension
   and directory summaries, largest-file reporting, `.corpusignore`

@@ -1,7 +1,7 @@
 ---
 title: "Catalog"
 doc_type: tool-readme
-corpus_spec_version: v0.20
+corpus_spec_version: v0.21
 status: prototype
 maturity: prototype
 ---
@@ -312,10 +312,10 @@ the Python standard library for discovery, parsing, search, and CLI.
 Catalog is a Python package. A Catalog release has two version axes:
 
 - `[project].version` in `pyproject.toml` is the Catalog package
-  version and becomes the Git tag name, such as `v0.2.0`.
+  version and becomes the Git tag name, such as `v0.3.0`.
 - `[tool.corpus-catalog.release].validated-corpus-spec` in
   `pyproject.toml` is the `corpus-spec` release used to validate this
-  Catalog release, such as `v0.20`.
+  Catalog release, such as `v0.21`.
 
 The runtime mirror in `corpus_catalog.release` is included in the
 installed wheel so `catalog version` and generated `.corpus/` manifests
@@ -330,9 +330,9 @@ uv run pytest
 uv run ruff check .
 uv build
 git status --short --branch
-git tag -a v0.2.0 -m "corpus-catalog v0.2.0"
+git tag -a v0.3.0 -m "corpus-catalog v0.3.0"
 git push origin main
-git push origin v0.2.0
+git push origin v0.3.0
 ```
 
 `uv build` creates the deployable artifacts under `dist/`:

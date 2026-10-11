@@ -4,14 +4,14 @@ from importlib.metadata import PackageNotFoundError, version
 
 
 PACKAGE_NAME = "corpus-catalog"
-VALIDATED_CORPUS_SPEC_VERSION = "v0.20"
+VALIDATED_CORPUS_SPEC_VERSION = "v0.21"
 
 
 def catalog_version() -> str:
     try:
         return version(PACKAGE_NAME)
     except PackageNotFoundError:
-        return "0.2.0"
+        return "0.3.0"
 
 
 def release_metadata() -> dict[str, str]:

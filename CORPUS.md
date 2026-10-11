@@ -1,10 +1,10 @@
 ---
 title: "CORPUS.md - Catalog"
 doc_type: corpus-entry
-corpus_spec_version: v0.20
+corpus_spec_version: v0.21
 corpus_spec_profile: project
 corpus_spec_adoption: partial
-corpus_spec_reviewed: 2026-06-03
+corpus_spec_reviewed: 2026-10-10
 corpus_spec_betas: []
 tag: personal
 tier_composition: BRIEF
@@ -75,7 +75,7 @@ The declaration lives in [`pyproject.toml`](./pyproject.toml):
 
 ```toml
 [tool.corpus-catalog.release]
-validated-corpus-spec = "v0.20"
+validated-corpus-spec = "v0.21"
 ```
 
 The runtime mirror lives in `corpus_catalog.release` so installed wheels
