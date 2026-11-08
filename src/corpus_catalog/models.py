@@ -158,6 +158,7 @@ class CorpusIdentity(BaseModel):
     owner_id: str
     realm: str
     tier: str
+    name: str | None = None
     aliases: list[str] = Field(default_factory=list)
 
 
@@ -171,6 +172,7 @@ class CorpusMount(BaseModel):
     owner_id: str
     realm: str
     tier: str
+    name: str | None = None
     node_id: str
     sync_transport: str | None = None
     root_path: str

@@ -135,3 +135,102 @@ def test_mount_inventory_registers_current_mount(tmp_path, monkeypatch):
     ]
     assert inventory.sync_status is not None
     assert inventory.sync_status.realm == "work"
+
+
+NAMED_ROOT_FRONT_MATTER = (
+    "corpus_spec_profile: project\n"
+    "corpus_spec_corpus_uri: corpus://iniate/github/cogent-agent-meta\n"
+    "corpus_spec_mount_uri: corpus://iniate/github/cogent-agent-meta@bilby\n"
+    "corpus_spec_owner_id: iniate\n"
+    "corpus_spec_realm: github\n"
+    "corpus_spec_tier: HOLD\n"
+    "corpus_spec_node_id: bilby\n"
+    "corpus_spec_sync_transport: git\n"
+)
+
+
+def write_named_root(root: Path, **overrides: str) -> None:
+    """Turn the fixture's tier-root identity into a promoted project's."""
+    handbook = root / "CORPUS.md"
+    lines = []
+    for line in handbook.read_text(encoding="utf-8").splitlines(keepends=True):
+        key = line.split(":", 1)[0]
+        if key in {
+            "corpus_spec_profile",
+            "corpus_spec_corpus_uri",
+            "corpus_spec_mount_uri",
+            "corpus_spec_owner_id",
+            "corpus_spec_realm",
+            "corpus_spec_tier",
+            "corpus_spec_node_id",
+            "corpus_spec_sync_transport",
+        }:
+            continue
+        lines.append(line)
+    text = "".join(lines)
+    block = NAMED_ROOT_FRONT_MATTER
+    for key, value in overrides.items():
+        block = "\n".join(
+            f"{key}: {value}" if line.startswith(f"{key}:") else line
+            for line in block.splitlines()
+        ) + "\n"
+    handbook.write_text(text.replace("---\n", "---\n" + block, 1), encoding="utf-8")
+
+
+def test_tier_root_name_is_its_tier(tmp_path):
+    root = copy_fixture(tmp_path)
+    config = CatalogConfig(corpus_root=root)
+
+    mount = extract_current_mount(load_corpus(config), config)
+
+    assert mount is not None
+    assert mount.name == "brief"
+    assert mount.tier == "BRIEF"
+
+
+def test_named_project_root_is_accepted_with_its_own_tier(tmp_path):
+    root = copy_fixture(tmp_path)
+    write_named_root(root)
+    config = CatalogConfig(corpus_root=root)
+
+    mount = extract_current_mount(load_corpus(config), config)
+
+    assert mount is not None
+    assert mount.corpus_uri == "corpus://iniate/github/cogent-agent-meta"
+    assert mount.name == "cogent-agent-meta"
+    assert mount.tier == "HOLD"
+    assert mount.owner_id == "iniate"
+    assert mount.realm == "github"
+    assert "github/cogent-agent-meta" in mount.aliases
+    assert "iniate/github/cogent-agent-meta@bilby" in mount.aliases
+    assert (
+        resolve_current_mount_selector(mount, corpus_selector="github/cogent-agent-meta")
+        == mount
+    )
+
+
+def test_named_root_still_rejects_a_mismatched_owner(tmp_path):
+    root = copy_fixture(tmp_path)
+    write_named_root(root, corpus_spec_owner_id="someone-else")
+    config = CatalogConfig(corpus_root=root)
+
+    with pytest.raises(CorpusIdentityError):
+        extract_current_mount(load_corpus(config), config)
+
+
+def test_named_root_still_rejects_a_mismatched_realm(tmp_path):
+    root = copy_fixture(tmp_path)
+    write_named_root(root, corpus_spec_realm="work")
+    config = CatalogConfig(corpus_root=root)
+
+    with pytest.raises(CorpusIdentityError):
+        extract_current_mount(load_corpus(config), config)
+
+
+def test_corpus_and_mount_uri_must_name_the_same_corpus(tmp_path):
+    root = copy_fixture(tmp_path)
+    write_named_root(root, corpus_spec_mount_uri="corpus://iniate/github/other-name@bilby")
+    config = CatalogConfig(corpus_root=root)
+
+    with pytest.raises(CorpusIdentityError):
+        extract_current_mount(load_corpus(config), config)

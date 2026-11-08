@@ -365,3 +365,61 @@ def test_beta_stewardship_ignores_consumed_release_checkout(tmp_path):
     codes = issue_codes(items, config)
 
     assert "profile-beta-missing-stewardship-epic" not in codes
+
+
+def identity_fields(
+    *,
+    corpus: str = "corpus://cmikeb/work/brief",
+    owner: str = "cmikeb",
+    realm: str = "work",
+    tier: str = "BRIEF",
+    node: str = "bilby",
+) -> dict[str, object]:
+    return {
+        "corpus_spec_corpus_uri": corpus,
+        "corpus_spec_mount_uri": f"{corpus}@{node}",
+        "corpus_spec_owner_id": owner,
+        "corpus_spec_realm": realm,
+        "corpus_spec_tier": tier,
+        "corpus_spec_node_id": node,
+        "corpus_spec_sync_transport": "git",
+    }
+
+
+def identity_codes(items, config: CatalogConfig) -> set[str]:
+    return {code for code in issue_codes(items, config) if code.startswith("core-corpus-identity")}
+
+
+def test_tier_root_named_after_its_tier_has_no_identity_issue(tmp_path):
+    config = CatalogConfig(corpus_root=tmp_path)
+    front_matter = {**corpus_front_matter(profile="tier-root"), **identity_fields()}
+    items = [item("CORPUS.md", "handbook", front_matter=front_matter)]
+
+    assert identity_codes(items, config) == set()
+
+
+def test_tier_root_named_otherwise_gets_a_warning_not_a_refusal(tmp_path):
+    config = CatalogConfig(corpus_root=tmp_path)
+    front_matter = {
+        **corpus_front_matter(profile="tier-root"),
+        **identity_fields(corpus="corpus://cmikeb/work/hodl", tier="HOLD"),
+    }
+    items = [item("CORPUS.md", "handbook", front_matter=front_matter)]
+
+    assert identity_codes(items, config) == {"core-corpus-identity-name-not-tier"}
+
+
+def test_promoted_project_root_with_its_own_name_is_clean(tmp_path):
+    config = CatalogConfig(corpus_root=tmp_path)
+    front_matter = {
+        **corpus_front_matter(profile="project"),
+        **identity_fields(
+            corpus="corpus://iniate/github/cogent-agent-meta",
+            owner="iniate",
+            realm="github",
+            tier="HOLD",
+        ),
+    }
+    items = [item("CORPUS.md", "handbook", front_matter=front_matter)]
+
+    assert identity_codes(items, config) == set()

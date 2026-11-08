@@ -20,10 +20,18 @@ from corpus_catalog.models import (
 from corpus_catalog.naming import entry_paths, field_value
 
 
+# corpus://<owner>/<realm>/<name>[@<node>]
+#
+# The third segment is the corpus NAME. For a tier root the name is the
+# lowercase tier label (corpus://cmikeb/work/hold is the HOLD tier); for a
+# project promoted to a corpus of its own it is the project's name
+# (corpus://iniate/github/cogent-agent-meta), and the access tier comes
+# from corpus_spec_tier alone. CORPUS-SPEC 018-PROMOTE, option A.
 CORPUS_URI_RE = re.compile(
-    r"^corpus://(?P<owner>[^/]+)/(?P<realm>[^/]+)/(?P<tier>[^/@]+)"
+    r"^corpus://(?P<owner>[^/]+)/(?P<realm>[^/]+)/(?P<name>[^/@]+)"
     r"(?:@(?P<node>[^/]+))?$"
 )
+TIER_LABELS = ("BRIEF", "HOLD", "CIPHER", "VAULT")
 CORPUS_HOME_ENV = "CORPUS_HOME"
 REGISTRY_FILENAME = "mounts.json"
 PLACEMENT_FIELDS = (
@@ -76,8 +84,7 @@ def mount_from_front_matter(
 
     owner_id = select_declared_value(owner_id, corpus_parts, mount_parts, "owner")
     realm = select_declared_value(realm, corpus_parts, mount_parts, "realm")
-    uri_tier = select_declared_value(None, corpus_parts, mount_parts, "tier")
-    tier = tier or (uri_tier.upper() if uri_tier else None)
+    name = select_declared_value(None, corpus_parts, mount_parts, "name")
     node_id = select_declared_value(node_id, None, mount_parts, "node")
 
     validate_consistent_identity(
@@ -85,7 +92,6 @@ def mount_from_front_matter(
         mount_uri,
         owner_id,
         realm,
-        tier,
         node_id,
     )
 
@@ -94,7 +100,8 @@ def mount_from_front_matter(
         owner_id=owner_id,
         realm=realm,
         tier=tier,
-        aliases=identity_aliases(owner_id, realm, tier),
+        name=name,
+        aliases=identity_aliases(owner_id, realm, name),
     )
     return CorpusMount(
         corpus_uri=identity.corpus_uri,
@@ -102,10 +109,11 @@ def mount_from_front_matter(
         owner_id=owner_id,
         realm=realm,
         tier=tier,
+        name=name,
         node_id=node_id,
         sync_transport=sync_transport,
         root_path=str(config.corpus_root),
-        aliases=mount_aliases(owner_id, realm, tier, node_id),
+        aliases=mount_aliases(owner_id, realm, name, node_id),
     )
 
 
@@ -117,7 +125,8 @@ def current_identity(mount: CorpusMount | None) -> CorpusIdentity | None:
         owner_id=mount.owner_id,
         realm=mount.realm,
         tier=mount.tier,
-        aliases=identity_aliases(mount.owner_id, mount.realm, mount.tier),
+        name=mount.name,
+        aliases=identity_aliases(mount.owner_id, mount.realm, corpus_name(mount)),
     )
 
 
@@ -397,15 +406,20 @@ def validate_consistent_identity(
     mount_uri: str,
     owner_id: str,
     realm: str,
-    tier: str,
     node_id: str,
 ) -> None:
+    """Check the two URIs against the declared owner, realm and node.
+
+    The URIs' third segment is the corpus name, not the tier: it must
+    agree between the two URIs (select_declared_value checks that) but is
+    not compared with corpus_spec_tier here. A tier root whose name is not
+    its tier is reported by the validator as a warning, not refused.
+    """
     corpus_parts = parse_corpus_uri(corpus_uri)
     mount_parts = parse_corpus_uri(mount_uri)
     expected = {
         "owner": owner_id,
         "realm": realm,
-        "tier": tier.casefold(),
     }
     for key, expected_value in expected.items():
         if str(corpus_parts[key]).casefold() != expected_value.casefold():
@@ -416,6 +430,8 @@ def validate_consistent_identity(
             raise CorpusIdentityError(
                 f"Mount URI does not match declared {key}: {expected_value}."
             )
+    if str(corpus_parts["name"]).casefold() != str(mount_parts["name"]).casefold():
+        raise CorpusIdentityError("Corpus URI and mount URI name different corpora.")
     if mount_parts.get("node") != node_id:
         raise CorpusIdentityError("Mount URI does not match declared node ID.")
     if corpus_parts.get("node") is not None:
@@ -435,22 +451,33 @@ def format_corpus_uri(
     return uri
 
 
-def identity_aliases(owner_id: str, realm: str, tier: str) -> list[str]:
-    short = f"{realm}/{tier.casefold()}"
+def corpus_name(mount: CorpusMount | CorpusIdentity) -> str:
+    """The corpus name: the URI's third segment, or the lowercase tier for
+    identities recorded before names existed."""
+    return mount.name or mount.tier.casefold()
+
+
+def is_named_root(mount: CorpusMount | CorpusIdentity) -> bool:
+    """True when the corpus is named after itself rather than its tier."""
+    return corpus_name(mount).casefold() != mount.tier.casefold()
+
+
+def identity_aliases(owner_id: str, realm: str, name: str) -> list[str]:
+    short = f"{realm}/{name.casefold()}"
     owner_scoped = f"{owner_id}/{short}"
     return [short, owner_scoped]
 
 
-def mount_aliases(owner_id: str, realm: str, tier: str, node_id: str) -> list[str]:
+def mount_aliases(owner_id: str, realm: str, name: str, node_id: str) -> list[str]:
     return [
-        *identity_aliases(owner_id, realm, tier),
-        f"{realm}/{tier.casefold()}@{node_id}",
-        f"{owner_id}/{realm}/{tier.casefold()}@{node_id}",
+        *identity_aliases(owner_id, realm, name),
+        f"{realm}/{name.casefold()}@{node_id}",
+        f"{owner_id}/{realm}/{name.casefold()}@{node_id}",
     ]
 
 
 def corpus_selector_values(mount: CorpusMount) -> set[str]:
-    return {mount.corpus_uri, *identity_aliases(mount.owner_id, mount.realm, mount.tier)}
+    return {mount.corpus_uri, *identity_aliases(mount.owner_id, mount.realm, corpus_name(mount))}
 
 
 def mount_selector_values(mount: CorpusMount) -> set[str]:

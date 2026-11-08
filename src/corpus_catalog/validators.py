@@ -13,7 +13,7 @@ from corpus_catalog.corpus import (
     load_corpus_ignore_patterns,
     path_is_ignored,
 )
-from corpus_catalog.identity import CorpusIdentityError, extract_current_mount
+from corpus_catalog.identity import CorpusIdentityError, corpus_name, extract_current_mount, is_named_root
 from corpus_catalog.models import CorpusItem, SourceRef, ValidationIssue
 from corpus_catalog.naming import (
     CANONICAL_ENTRY_FILENAME,
@@ -147,6 +147,23 @@ def validate_corpus_identity(
                 message=(
                     "Tier root does not declare corpus URI, mount URI, "
                     "owner, realm, tier, node, and sync transport fields."
+                ),
+                source=root_item.source,
+                baseline=baseline,
+            )
+        ]
+
+    profile = str(field_value(root_item.front_matter, "corpus_spec_profile") or "").casefold()
+    if profile == "tier-root" and is_named_root(mount):
+        return [
+            ValidationIssue(
+                code="core-corpus-identity-name-not-tier",
+                severity="warning",
+                message=(
+                    f"Tier root's corpus URI names {corpus_name(mount)!r}, not its "
+                    f"tier {mount.tier.casefold()!r}. A tier root is named after its "
+                    "tier; only a project promoted to a corpus of its own carries "
+                    "another name."
                 ),
                 source=root_item.source,
                 baseline=baseline,

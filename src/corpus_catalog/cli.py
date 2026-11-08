@@ -17,6 +17,7 @@ from corpus_catalog.identity import (
     CorpusIdentityError,
     build_mount_inventory,
     extract_current_mount,
+    is_named_root,
     mount_registration_warning,
     resolve_current_mount_selector,
 )
@@ -519,6 +520,7 @@ def format_mount_inventory(inventory: MountInventory) -> str:
             [
                 f"Current mount: {mount.mount_uri}",
                 f"Logical corpus: {mount.corpus_uri}",
+                *([f"Corpus name: {mount.name}"] if is_named_root(mount) else []),
                 f"Aliases: {', '.join(mount.aliases)}",
                 f"Owner: {mount.owner_id}",
                 f"Realm: {mount.realm}",
