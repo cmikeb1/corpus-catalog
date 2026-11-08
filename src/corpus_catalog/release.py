@@ -11,7 +11,7 @@ def catalog_version() -> str:
     try:
         return version(PACKAGE_NAME)
     except PackageNotFoundError:
-        return "0.3.0"
+        return "0.3.1"
 
 
 def release_metadata() -> dict[str, str]:

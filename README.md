@@ -330,9 +330,9 @@ uv run pytest
 uv run ruff check .
 uv build
 git status --short --branch
-git tag -a v0.3.0 -m "corpus-catalog v0.3.0"
+git tag -a v0.3.1 -m "corpus-catalog v0.3.1"
 git push origin main
-git push origin v0.3.0
+git push origin v0.3.1
 ```
 
 `uv build` creates the deployable artifacts under `dist/`:

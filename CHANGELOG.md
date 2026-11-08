@@ -6,6 +6,24 @@ Release history for the `corpus-catalog` Python package and CLI.
 
 No unreleased changes.
 
+## v0.3.1 - 2026-11-07
+
+Validated against `corpus-spec` `v0.21`.
+
+- The corpus URI's third segment is now the corpus **name**, not the
+  tier (CORPUS-SPEC Spec epic `018-PROMOTE`, option A). A tier root is
+  named after its tier as before (`corpus://cmikeb/work/hold` is the
+  HOLD tier); a project promoted to a corpus of its own carries its own
+  name (`corpus://iniate/github/cogent-agent-meta`) and declares its
+  access tier with `corpus_spec_tier` alone. Owner, realm and node are
+  still checked against both URIs, and the two URIs must name the same
+  corpus. Identity and mount records gain a `name` field; aliases are
+  built from the name (unchanged for tier roots).
+- New validation warning `core-corpus-identity-name-not-tier` when a
+  `tier-root` handbook's corpus URI names something other than its tier
+  (previously a hard refusal of the whole root).
+- `catalog mounts` prints `Corpus name:` for a named root.
+
 ## v0.3.0 - 2026-10-10
 
 Validated against `corpus-spec` `v0.21`.
